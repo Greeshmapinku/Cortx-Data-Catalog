@@ -2,7 +2,9 @@ services:
   - type: web
     name: cortx-catalog-demo
     runtime: python
-    buildCommand: pip install -e ".[dev]"
+    buildCommand: |
+      pip install -e ".[dev]"
+      python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
     startCommand: python app.py
     envVars:
       - key: PYTHON_VERSION
@@ -11,3 +13,5 @@ services:
         sync: false  # Set this in Render dashboard
       - key: PORT
         value: 10000
+      - key: RENDER
+        value: "true"

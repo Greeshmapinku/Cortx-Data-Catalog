@@ -22,11 +22,56 @@ def init_catalog():
     """Initialize catalog with Northwind dataset."""
     global builder
     
-    # Build catalog
+    # Check if pre-generated catalog exists (for deployment)
+    if Path("catalog.json").exists() and os.getenv("RENDER"):
+        print("Loading pre-generated catalog...")
+        builder = CatalogBuilder(annotate=False, embed=False)
+        
+        # Load from JSON
+        with open("catalog.json", "r") as f:
+            data = json.load(f)
+        
+        # Reconstruct entries
+        from cortx_catalog.models import CatalogEntry, ProfileData, SemanticData, MCPTool, ColumnProfile, MCPInputSchema
+        
+        for entry_data in data.get("catalog", []):
+            # Parse profile
+            profile = ProfileData(
+                row_count=entry_data["profile"]["row_count"],
+                columns=[ColumnProfile(**col) for col in entry_data["profile"]["columns"]]
+            )
+            
+            # Parse semantic
+            semantic = SemanticData(**entry_data["semantic"])
+            
+            # Parse MCP tool
+            mcp_data = entry_data["mcp_tool"]
+            mcp_tool = MCPTool(
+                name=mcp_data["name"],
+                description=mcp_data["description"],
+                input_schema=MCPInputSchema(**mcp_data["input_schema"])
+            )
+            
+            # Create entry
+            entry = CatalogEntry(
+                source_id=entry_data["source_id"],
+                source_type=entry_data["source_type"],
+                connection_ref=entry_data["connection_ref"],
+                profile=profile,
+                semantic=semantic,
+                mcp_tool=mcp_tool
+            )
+            
+            builder.catalog.add_entry(entry)
+        
+        print(f"✓ Loaded {len(builder.catalog.entries)} sources from catalog.json")
+        return builder
+    
+    # Build catalog from scratch (for local development)
     builder = CatalogBuilder(annotate=True, embed=True)
     
     # Northwind dataset
-    dataset_dir = "Dataset/Northwind_Traders"
+    dataset_dir = "dataset/Northwind_Traders"
     sources = [
         ("csv", os.path.join(dataset_dir, "categories.csv"), None),
         ("csv", os.path.join(dataset_dir, "customers.csv"), None),
