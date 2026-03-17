@@ -8,8 +8,15 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template, request, send_file, make_response
 from flask_cors import CORS
 
-from cortx_catalog.catalog_builder import CatalogBuilder
-from cortx_catalog.demo import create_demo_data
+# Handle missing ML libraries on Render
+try:
+    from cortx_catalog.catalog_builder import CatalogBuilder
+    from cortx_catalog.demo import create_demo_data
+    HAS_ML = True
+except ImportError:
+    HAS_ML = False
+    # Minimal imports for Render
+    from cortx_catalog.models import Catalog, CatalogEntry, ProfileData, SemanticData, MCPTool, ColumnProfile, MCPInputSchema
 
 app = Flask(__name__)
 CORS(app)
@@ -18,33 +25,25 @@ CORS(app)
 builder = None
 
 
-def init_catalog():
-    """Initialize catalog with Northwind dataset."""
-    global builder
+class SimpleCatalogBuilder:
+    """Minimal catalog builder for Render (no ML dependencies)."""
+    def __init__(self):
+        self.catalog = Catalog()
+        self.embedder = None
     
-    # Check if pre-generated catalog exists (for deployment)
-    if Path("catalog.json").exists() and os.getenv("RENDER"):
-        print("Loading pre-generated catalog...")
-        builder = CatalogBuilder(annotate=False, embed=False)
-        
-        # Load from JSON
-        with open("catalog.json", "r") as f:
+    def load_from_json(self, filepath):
+        """Load catalog from pre-generated JSON."""
+        with open(filepath, "r") as f:
             data = json.load(f)
         
-        # Reconstruct entries
-        from cortx_catalog.models import CatalogEntry, ProfileData, SemanticData, MCPTool, ColumnProfile, MCPInputSchema
-        
         for entry_data in data.get("catalog", []):
-            # Parse profile
             profile = ProfileData(
                 row_count=entry_data["profile"]["row_count"],
                 columns=[ColumnProfile(**col) for col in entry_data["profile"]["columns"]]
             )
             
-            # Parse semantic
             semantic = SemanticData(**entry_data["semantic"])
             
-            # Parse MCP tool
             mcp_data = entry_data["mcp_tool"]
             mcp_tool = MCPTool(
                 name=mcp_data["name"],
@@ -52,7 +51,6 @@ def init_catalog():
                 input_schema=MCPInputSchema(**mcp_data["input_schema"])
             )
             
-            # Create entry
             entry = CatalogEntry(
                 source_id=entry_data["source_id"],
                 source_type=entry_data["source_type"],
@@ -62,15 +60,24 @@ def init_catalog():
                 mcp_tool=mcp_tool
             )
             
-            builder.catalog.add_entry(entry)
-        
+            self.catalog.add_entry(entry)
+
+
+def init_catalog():
+    """Initialize catalog with Northwind dataset."""
+    global builder
+    
+    # On Render: Use simple loader without ML dependencies
+    if os.getenv("RENDER") or not HAS_ML:
+        print("Loading pre-generated catalog (Render mode)...")
+        builder = SimpleCatalogBuilder()
+        builder.load_from_json("catalog.json")
         print(f"✓ Loaded {len(builder.catalog.entries)} sources from catalog.json")
         return builder
     
-    # Build catalog from scratch (for local development)
+    # Local development: Full pipeline with ML
     builder = CatalogBuilder(annotate=True, embed=True)
     
-    # Northwind dataset
     dataset_dir = "dataset/Northwind_Traders"
     sources = [
         ("csv", os.path.join(dataset_dir, "categories.csv"), None),
@@ -143,6 +150,14 @@ def search():
     
     if not query:
         return jsonify({"error": "Query parameter 'q' required"}), 400
+    
+    # Check if search is available (embedder loaded)
+    if not hasattr(builder, 'search') or not builder.embedder:
+        return jsonify({
+            "query": query,
+            "results": [],
+            "message": "Semantic search not available in Render mode (pre-generated catalog)"
+        })
     
     results = builder.search(query, top_k)
     

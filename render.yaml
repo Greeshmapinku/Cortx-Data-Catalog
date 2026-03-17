@@ -2,13 +2,11 @@ services:
   - type: web
     name: cortx-catalog-demo
     runtime: python
-    buildCommand: pip install -e ".[dev]"
+    buildCommand: pip install -r requirements-render.txt
     startCommand: python app.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: GROQ_API_KEY
-        sync: false  # Set this in Render dashboard
       - key: PORT
         value: 10000
       - key: RENDER
