@@ -1,0 +1,56 @@
+Initializing catalog with demo data...
+Warning: GROQ_API_KEY not set, skipping annotation
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 3919.16it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+D:\Student Assignments\student_protfolios\Greeshma\Semantic_Layer_Builder\src\cortx_catalog\profiler.py:204: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  converted = pd.to_datetime(series, errors="coerce")
+Loading Northwind Traders dataset...
+  ✓ csv.categories: 8 rows
+  ✓ csv.customers: 91 rows
+  ✓ csv.employees: 9 rows
+  ✓ csv.orders: 830 rows
+  ✓ csv.order_details: 2,155 rows
+  ✓ csv.products: 77 rows
+  ✓ csv.shippers: 3 rows
+✓ Loaded 7 sources
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.31.57:5000
+Press CTRL+C to quit
+ * Restarting with stat
+Initializing catalog with demo data...
+Warning: GROQ_API_KEY not set, skipping annotation
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 4646.50it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+D:\Student Assignments\student_protfolios\Greeshma\Semantic_Layer_Builder\src\cortx_catalog\profiler.py:204: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  converted = pd.to_datetime(series, errors="coerce")
+ * Debugger is active!
+ * Debugger PIN: 125-676-017
+127.0.0.1 - - [18/Mar/2026 03:56:50] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:56:50] "GET /api/catalog HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:56:50] "GET /api/manifest HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:57:02] "GET /download/catalog.json HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:57:34] "GET /download/catalog.json HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:57:36] "GET /download/tool_manifest.json HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:57:37] "GET /api/manifest HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:57:39] "GET /download/tool_manifest.json HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:57:40] "GET /api/catalog HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:57:42] "GET /download/catalog.json HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:59:19] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:59:19] "GET /api/catalog HTTP/1.1" 200 -
+127.0.0.1 - - [18/Mar/2026 03:59:19] "GET /api/manifest HTTP/1.1" 200 -
