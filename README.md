@@ -218,9 +218,7 @@ PORT=5000                           # Optional: Change web server port
 | Run tests | `pytest` |
 | Stop server | `CTRL + C` |
 
-##  License
 
-MIT License - See LICENSE file for details.
 
 ---
 
