@@ -61,10 +61,6 @@ http://localhost:5000
 ```bash
 # Set up Groq API key for LLM annotation (optional, free at https://console.groq.com)
 $env:GROQ_API_KEY="your-key-here"  # Windows
-export GROQ_API_KEY="your-key-here"  # Mac/Linux
-
-# Profile a CSV file
-cortx-catalog-gen --source csv --uri ./customers.csv --output catalog.json
 
 # profile a local csv file
 cortx-catalog-gen --source csv --uri dataset/Northwind_Traders/customers.csv
