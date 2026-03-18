@@ -2,7 +2,7 @@
 
 A Python CLI tool that ingests data sources, profiles them, sends metadata to an LLM for annotation, and outputs a `catalog.json` plus a ready-to-register MCP tool manifest.
 
-## 🎯 Problem Solved
+##  Problem Solved
 
 Cortx agents (RAG, MCP tools) currently discover data sources at runtime with no metadata about what they contain, how they're structured, or what business concepts they represent. This tool builds the semantic layer that enables agents to:
 
@@ -10,7 +10,7 @@ Cortx agents (RAG, MCP tools) currently discover data sources at runtime with no
 - Return better results through understanding data relationships  
 - Reason about which data source to use for a given query
 
-## 🚀 Quick Start (CLI)
+##  Quick Start (CLI)
 
 ### Installation
 
@@ -97,15 +97,15 @@ The CLI generates exactly what Cortx agents need:
 }
 ```
 
-## ✨ Features
+##  Features
 
-- **📊 Multi-Source Support**: CSV, SQLite, Parquet (PostgreSQL/MySQL stubs ready)
-- **🔍 Deep Profiling**: Cardinality, null rates, type inference, PII detection (5 patterns), date ranges
-- **🤖 LLM Annotation**: Structured JSON output via Groq API with few-shot examples
-- **🔎 Semantic Search**: Embeddings for similarity-based catalog search (title + description + query_hints)
-- **🛠️ MCP Manifests**: Agent-legible descriptions with use/avoid guidance
+- **Multi-Source Support**: CSV, SQLite, Parquet (PostgreSQL/MySQL stubs ready)
+- **Deep Profiling**: Cardinality, null rates, type inference, PII detection (5 patterns), date ranges
+- **LLM Annotation**: Structured JSON output via Groq API with few-shot examples
+- **Semantic Search**: Embeddings for similarity-based catalog search (title + description + query_hints)
+- **MCP Manifests**: Agent-legible descriptions with use/avoid guidance
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 cortx_catalog/
@@ -122,7 +122,7 @@ cortx_catalog/
     └── parquet.py
 ```
 
-## 🧪 Testing
+##  Testing
 
 ```bash
 # Run all tests
@@ -141,7 +141,7 @@ e = Embedder()
 "
 ```
 
-## 🌐 Optional Web Demo
+##  Optional Web Demo
 
 A Flask web interface is included for visualizing the catalog during development/demo:
 
@@ -157,7 +157,7 @@ python app.py
 
 **Note:** The web UI is for visualization only. The CLI tool (`cortx-catalog-gen`) is the primary deliverable that generates the JSON outputs Cortx agents consume.
 
-## 📊 Assessment Alignment
+##  Assessment Alignment
 
 | Requirement | Implementation |
 |-------------|----------------|
@@ -178,13 +178,10 @@ python app.py
 - **Embeddings**: sentence-transformers (local, free)
 - **Models**: Pydantic v2
 
-## 📝 Environment Variables
+##  Environment Variables
 
 ```bash
 GROQ_API_KEY=your_groq_api_key      # Required for LLM annotation
 CORTX_LOG_LEVEL=INFO                # Optional: DEBUG, INFO, WARNING
 ```
 
-## 📄 License
-
-MIT License - See LICENSE file for details.
