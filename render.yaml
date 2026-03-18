@@ -4,9 +4,8 @@ services:
     runtime: python
     region: oregon
     plan: free
-    # Only install minimal deps, SKIP the package with heavy ML deps
     buildCommand: "pip install flask flask-cors pandas pydantic python-dotenv pyarrow"
-    startCommand: "python app_render.py"
+    startCommand: "python app.py"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
