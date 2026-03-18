@@ -1,0 +1,232 @@
+================================================================================
+CORTX DATA CATALOG - HOW TO RUN LOCALLY
+================================================================================
+
+This guide explains how to run the Cortx Data Catalog tool on your local machine.
+
+================================================================================
+OPTION 1: WEB DASHBOARD (RECOMMENDED)
+================================================================================
+
+The web dashboard provides a visual interface to browse the data catalog,
+search sources, and download JSON files.
+
+STEP 1: OPEN POWERSHELL
+-----------------------
+1. Press Windows key
+2. Type "PowerShell"
+3. Press Enter
+
+STEP 2: NAVIGATE TO PROJECT FOLDER
+----------------------------------
+Type this command and press Enter:
+
+cd "d:\Student Assignments\student_protfolios\Greeshma\Semantic_Layer_Builder"
+
+STEP 3: ACTIVATE VIRTUAL ENVIRONMENT
+------------------------------------
+Type this command:
+
+.\venv\Scripts\Activate.ps1
+
+You should see (venv) appear at the start of your prompt.
+
+STEP 4: START THE WEB SERVER
+----------------------------
+Type this command:
+
+python app.py
+
+STEP 5: WAIT FOR SERVER TO START
+--------------------------------
+You will see output like this:
+
+==================================================
+STARTING CORTX DATA CATALOG - RENDER MODE
+==================================================
+Loading catalog from catalog.json...
+✓ Loaded 7 sources
+==================================================
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.31.57:5000
+Press CTRL+C to quit
+
+STEP 6: OPEN BROWSER
+--------------------
+Open your web browser and go to:
+
+http://127.0.0.1:5000
+
+or
+
+http://localhost:5000
+
+STEP 7: USE THE DASHBOARD
+-------------------------
+- View all 7 data sources from Northwind dataset
+- See statistics (total rows, columns)
+- Use the search box to find sources
+- Click download buttons to get JSON files
+- Browse data source details
+
+STEP 8: STOP THE SERVER
+-----------------------
+When finished, go back to PowerShell and press:
+
+CTRL + C
+
+Then type: deactivate
+
+================================================================================
+OPTION 2: COMMAND LINE INTERFACE (CLI)
+================================================================================
+
+The CLI tool allows you to generate catalogs from the command line.
+
+STEP 1-3: Same as Option 1 (Navigate and Activate)
+--------------------------------------------------
+
+cd "d:\Student Assignments\student_protfolios\Greeshma\Semantic_Layer_Builder"
+.\venv\Scripts\Activate.ps1
+
+STEP 4: RUN CLI COMMANDS
+------------------------
+
+A. Show help:
+
+cortx-catalog-gen --help
+
+B. Run demo mode:
+cortx-catalog-gen --demo --source sqlite --uri demo_data\trading.db --no-annotate
+
+C. Profile a CSV file:
+cortx-catalog-gen --source csv --uri dataset\Northwind_Traders\customers.csv --no-annotate
+
+D. Profile with LLM annotation (requires API key):
+set GROQ_API_KEY=your_key_here
+cortx-catalog-gen --source csv --uri dataset\Northwind_Traders\customers.csv --annotate
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+PROBLEM 1: "venv not found"
+---------------------------
+Solution: Create the virtual environment
+
+python -m venv venv
+.\venv\Scripts\pip install -r requirements.txt
+
+PROBLEM 2: "Port already in use"
+--------------------------------
+Solution: Change the port in app.py or kill the existing process
+
+Edit app.py line 263:
+port = int(os.getenv("PORT", 5001))  # Changed from 5000
+
+PROBLEM 3: "catalog.json not found"
+-----------------------------------
+Solution: Generate it first using the CLI
+
+cortx-catalog-gen --demo --source sqlite --uri test.db --no-annotate
+
+PROBLEM 4: Module not found errors
+----------------------------------
+Solution: Install all requirements
+
+.\venv\Scripts\pip install -r requirements.txt
+
+PROBLEM 5: Cannot activate PowerShell scripts
+---------------------------------------------
+Solution: Change execution policy (run as Administrator)
+
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+================================================================================
+FILE LOCATIONS
+================================================================================
+
+Main Files:
+- app.py              : Web application entry point
+- app_render.py       : Lightweight version for Render
+- catalog.json        : Generated catalog output
+- tool_manifest.json  : MCP tool manifests
+
+Source Code:
+- src/cortx_catalog/  : Main package
+  - profiler.py       : Data profiling logic
+  - annotator.py      : LLM annotation
+  - embedder.py       : Semantic embeddings
+  - manifest.py       : MCP manifest generator
+  - catalog_builder.py: Main orchestrator
+
+Data:
+- dataset/Northwind_Traders/ : Sample CSV files
+- demo_data/                   : Generated demo files
+
+================================================================================
+WHAT YOU'LL SEE
+================================================================================
+
+Web Dashboard Features:
+- Dark themed UI with "Cortx Data Catalog" header
+- Stats showing: 7 data sources, ~4,000 rows, 50+ columns
+- Search box for semantic search
+- Download buttons for catalog.json and tool_manifest.json
+- Cards for each data source showing:
+  - Title (e.g., "Customer Directory", "Sales Orders")
+  - Description
+  - Domain tags (colored badges)
+  - Row count and column count
+  - Sensitivity level
+
+CLI Output:
+- Progress messages as sources are processed
+- Generated catalog.json file
+- Tool manifests in tool_manifest.json
+- Semantic search demo results
+
+================================================================================
+QUICK TEST COMMANDS
+================================================================================
+
+Test the API endpoints:
+
+1. Health check:
+curl http://127.0.0.1:5000/api/health
+
+2. Get catalog:
+curl http://127.0.0.1:5000/api/catalog
+
+3. Search:
+curl "http://127.0.0.1:5000/api/search?q=customer%20sales"
+
+4. Get manifests:
+curl http://127.0.0.1:5000/api/manifest
+
+================================================================================
+REQUIREMENTS
+================================================================================
+
+- Python 3.10 or higher
+- Virtual environment (venv)
+- Dependencies listed in requirements.txt:
+  * flask, flask-cors (web server)
+  * pandas, pyarrow (data processing)
+  * pydantic (data validation)
+  * sentence-transformers (embeddings - for local only)
+  * groq (LLM API - optional)
+
+================================================================================
+SUPPORT
+================================================================================
+
+If you encounter issues:
+1. Check flask.log file for errors
+2. Verify Python version: python --version
+3. Ensure all files are present: dir catalog.json
+4. Try the lightweight Render version: python app_render.py
+
+================================================================================
+END OF GUIDE
+================================================================================
