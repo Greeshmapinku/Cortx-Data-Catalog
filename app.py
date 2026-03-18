@@ -1,314 +1,89 @@
-"""Lightweight Flask app for Render deployment - NO package dependencies."""
+"""Web application for LOCAL development - FULL features with Northwind dataset."""
 
 import json
 import os
 from pathlib import Path
-from flask import Flask, jsonify, render_template_string, request
+from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
+
+# Full imports for local development
+from cortx_catalog.catalog_builder import CatalogBuilder
+from cortx_catalog.embedder import Embedder
 
 app = Flask(__name__)
 CORS(app)
 
-# Global catalog
-catalog_entries = []
+# Global catalog builder with full ML features
+builder = None
 
 
-def load_catalog():
-    """Load catalog from pre-generated JSON."""
-    global catalog_entries
+def init_catalog():
+    """Initialize catalog with Northwind dataset (full pipeline)."""
+    global builder
     
-    print("=" * 50)
-    print("STARTING CORTX DATA CATALOG - RENDER MODE")
-    print("=" * 50)
+    print("=" * 60)
+    print("🚀 CORTX DATA CATALOG - LOCAL MODE (Full Features)")
+    print("=" * 60)
     
-    catalog_path = "catalog.json"
-    if not Path(catalog_path).exists():
-        print(f"ERROR: {catalog_path} not found!")
-        return []
+    # Check for API key
+    has_api_key = os.getenv("GROQ_API_KEY") is not None
+    if not has_api_key:
+        print("⚠️  Warning: GROQ_API_KEY not set. Using fallback annotations.")
+        print("   Set GROQ_API_KEY for LLM-generated descriptions.")
+    else:
+        print("✓ GROQ_API_KEY found - LLM annotation enabled")
     
-    print(f"Loading catalog from {catalog_path}...")
-    with open(catalog_path, "r") as f:
-        data = json.load(f)
+    # Create full CatalogBuilder with ML features
+    print("\n📦 Initializing CatalogBuilder...")
+    builder = CatalogBuilder(annotate=True, embed=True)
     
-    catalog_entries = data.get("catalog", [])
-    print(f"✓ Loaded {len(catalog_entries)} sources")
-    print("=" * 50)
+    # Load Northwind dataset
+    dataset_dir = Path("dataset/Northwind_Traders")
+    if not dataset_dir.exists():
+        print(f"❌ Error: Dataset not found at {dataset_dir}")
+        print("   Run from project root directory")
+        return None
     
-    return catalog_entries
-
-
-def simple_search(query, top_k=3):
-    """Simple keyword search (no embeddings)."""
-    query_lower = query.lower()
-    results = []
+    sources = [
+        ("csv", str(dataset_dir / "categories.csv"), None),
+        ("csv", str(dataset_dir / "customers.csv"), None),
+        ("csv", str(dataset_dir / "employees.csv"), None),
+        ("csv", str(dataset_dir / "orders.csv"), None),
+        ("csv", str(dataset_dir / "order_details.csv"), None),
+        ("csv", str(dataset_dir / "products.csv"), None),
+        ("csv", str(dataset_dir / "shippers.csv"), None),
+    ]
     
-    for entry in catalog_entries:
-        score = 0
-        semantic = entry.get("semantic", {})
-        text = f"{semantic.get('title', '')} {semantic.get('description', '')} {' '.join(semantic.get('domain_tags', []))}"
-        text_lower = text.lower()
-        
-        # Simple keyword matching
-        query_words = [w for w in query_lower.split() if len(w) > 2]
-        for word in query_words:
-            if word in text_lower:
-                score += 1
-        
-        if score > 0:
-            results.append({
-                "source_id": entry.get("source_id"),
-                "confidence": min(score / len(query_words), 1.0) if query_words else 0,
-                "metadata": {
-                    "source_id": entry.get("source_id"),
-                    "source_type": entry.get("source_type"),
-                    "title": semantic.get("title"),
-                    "domain_tags": semantic.get("domain_tags", [])
-                }
-            })
+    print(f"\n📊 Loading Northwind Traders dataset...")
+    print("-" * 60)
     
-    results.sort(key=lambda x: x["confidence"], reverse=True)
-    return results[:top_k]
+    for source_type, uri, table in sources:
+        try:
+            entry = builder.add_source(source_type, uri, table)
+            print(f"  ✓ {entry.source_id:<25} | {entry.profile.row_count:>5,} rows | {len(entry.profile.columns):>2} cols")
+        except Exception as e:
+            print(f"  ❌ Error loading {uri}: {e}")
+    
+    print("-" * 60)
+    print(f"✅ Loaded {len(builder.catalog.entries)} sources")
+    print(f"📈 Total rows: {sum(e.profile.row_count for e in builder.catalog.entries):,}")
+    print(f"📊 Total columns: {sum(len(e.profile.columns) for e in builder.catalog.entries)}")
+    
+    # Save outputs
+    print("\n💾 Saving outputs...")
+    builder.save("catalog.json")
+    builder.save_manifest("tool_manifest.json")
+    print("  ✓ catalog.json")
+    print("  ✓ tool_manifest.json")
+    
+    print("=" * 60)
+    return builder
 
 
 @app.route("/")
 def index():
-    """Serve the main UI."""
-    total_rows = sum(e.get("profile", {}).get("row_count", 0) for e in catalog_entries)
-    total_cols = sum(len(e.get("profile", {}).get("columns", [])) for e in catalog_entries)
-    
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Cortx Data Catalog</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: #0a0a0a;
-                color: #fff;
-                line-height: 1.6;
-            }}
-            .container {{ max-width: 1200px; margin: 0 auto; padding: 20px; }}
-            header {{
-                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-                padding: 40px 0;
-                text-align: center;
-                border-bottom: 1px solid #333;
-            }}
-            h1 {{ font-size: 2.5em; margin-bottom: 10px; }}
-            .subtitle {{ color: #888; font-size: 1.1em; }}
-            .byline {{ color: #666; font-size: 0.9em; margin-top: 10px; }}
-            .stats {{
-                display: flex;
-                justify-content: center;
-                gap: 40px;
-                margin-top: 30px;
-                flex-wrap: wrap;
-            }}
-            .stat {{
-                text-align: center;
-                padding: 20px 30px;
-                background: rgba(255,255,255,0.05);
-                border-radius: 12px;
-                border: 1px solid #333;
-            }}
-            .stat-value {{ font-size: 2em; font-weight: bold; color: #4CAF50; }}
-            .stat-label {{ color: #888; font-size: 0.9em; }}
-            .content {{ padding: 40px 0; }}
-            .entry {{
-                background: #1a1a1a;
-                border: 1px solid #333;
-                border-radius: 12px;
-                padding: 25px;
-                margin-bottom: 20px;
-            }}
-            .entry-header {{
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 15px;
-                flex-wrap: wrap;
-                gap: 10px;
-            }}
-            .entry-title {{ font-size: 1.3em; color: #fff; }}
-            .entry-type {{
-                background: #333;
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 0.8em;
-                color: #aaa;
-            }}
-            .entry-desc {{ color: #aaa; margin-bottom: 15px; }}
-            .tags {{ display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }}
-            .tag {{
-                background: rgba(76, 175, 80, 0.2);
-                color: #4CAF50;
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 0.8em;
-            }}
-            .search-box {{
-                width: 100%;
-                max-width: 600px;
-                margin: 0 auto 40px;
-                display: flex;
-                gap: 10px;
-            }}
-            .search-input {{
-                flex: 1;
-                padding: 15px 20px;
-                border: 1px solid #333;
-                border-radius: 8px;
-                background: #1a1a1a;
-                color: #fff;
-                font-size: 1em;
-            }}
-            .search-btn {{
-                padding: 15px 30px;
-                background: #4CAF50;
-                color: #fff;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-                font-size: 1em;
-            }}
-            .search-btn:hover {{ background: #45a049; }}
-            .download-links {{
-                text-align: center;
-                margin: 30px 0;
-            }}
-            .download-links a {{
-                color: #4CAF50;
-                text-decoration: none;
-                margin: 0 15px;
-            }}
-            footer {{
-                text-align: center;
-                padding: 40px 0;
-                color: #666;
-                border-top: 1px solid #333;
-            }}
-        </style>
-    </head>
-    <body>
-        <header>
-            <div class="container">
-                <h1>🗂️ Cortx Data Catalog</h1>
-                <p class="subtitle">Semantic Layer for AI Agents</p>
-                <p class="byline">by Greeshma</p>
-                
-                <div class="stats">
-                    <div class="stat">
-                        <div class="stat-value">{len(catalog_entries)}</div>
-                        <div class="stat-label">Data Sources</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value">{total_rows:,}</div>
-                        <div class="stat-label">Total Rows</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value">{total_cols}</div>
-                        <div class="stat-label">Columns</div>
-                    </div>
-                </div>
-            </div>
-        </header>
-        
-        <div class="container content">
-            <div class="search-box">
-                <input type="text" class="search-input" id="searchInput" 
-                       placeholder="Search data sources (e.g., 'customer sales')...">
-                <button class="search-btn" onclick="search()">Search</button>
-            </div>
-            
-            <div class="download-links">
-                <a href="/download/catalog.json" download>📥 Download catalog.json</a>
-                <a href="/download/tool_manifest.json" download>📥 Download tool_manifest.json</a>
-            </div>
-            
-            <div id="results"></div>
-            
-            <h2 style="margin: 40px 0 20px;">All Data Sources</h2>
-    """
-    
-    for entry in catalog_entries:
-        semantic = entry.get("semantic", {})
-        profile = entry.get("profile", {})
-        tags = semantic.get("domain_tags", [])
-        tags_html = ''.join(f'<span class="tag">{tag}</span>' for tag in tags)
-        
-        html += f"""
-            <div class="entry">
-                <div class="entry-header">
-                    <h3 class="entry-title">{semantic.get('title', 'Untitled')}</h3>
-                    <span class="entry-type">{entry.get('source_type', 'unknown')}</span>
-                </div>
-                <p class="entry-desc">{semantic.get('description', 'No description')}</p>
-                <div class="tags">{tags_html}</div>
-                <p style="color: #666; font-size: 0.9em;">
-                    📊 {profile.get('row_count', 0):,} rows • 
-                    {len(profile.get('columns', []))} columns • 
-                    Sensitivity: {semantic.get('sensitivity', 'unknown')}
-                </p>
-            </div>
-        """
-    
-    html += """
-        </div>
-        
-        <footer>
-            <div class="container">
-                <p>Cortx Data Catalog &copy; 2025 | Built by Greeshma</p>
-                <p style="margin-top: 10px; font-size: 0.9em;">
-                    Semantic layer enabling intelligent data discovery for AI agents
-                </p>
-            </div>
-        </footer>
-        
-        <script>
-            async function search() {
-                const query = document.getElementById('searchInput').value;
-                if (!query) return;
-                
-                const response = await fetch('/api/search?q=' + encodeURIComponent(query));
-                const data = await response.json();
-                
-                let html = '<h2 style="margin: 40px 0 20px;">Search Results</h2>';
-                
-                if (data.results.length === 0) {
-                    html += '<p style="color: #888;">No results found.</p>';
-                } else {
-                    data.results.forEach(r => {
-                        html += `
-                            <div class="entry">
-                                <div class="entry-header">
-                                    <h3 class="entry-title">${r.metadata.title}</h3>
-                                    <span class="entry-type">${(r.confidence * 100).toFixed(1)}% match</span>
-                                </div>
-                                <p style="color: #888;">Source: ${r.source_id}</p>
-                                <div class="tags">
-                                    ${r.metadata.domain_tags.map(t => `<span class="tag">${t}</span>`).join('')}
-                                </div>
-                            </div>
-                        `;
-                    });
-                }
-                
-                document.getElementById('results').innerHTML = html;
-            }
-            
-            document.getElementById('searchInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') search();
-            });
-        </script>
-    </body>
-    </html>
-    """
-    
-    return render_template_string(html)
+    """Serve the main UI using templates/index.html."""
+    return render_template("index.html")
 
 
 @app.route("/api/health")
@@ -316,38 +91,87 @@ def health():
     """Health check endpoint."""
     return jsonify({
         "status": "healthy",
-        "catalog_loaded": len(catalog_entries) > 0,
-        "sources_count": len(catalog_entries),
-        "mode": "render-standalone"
+        "catalog_loaded": builder is not None and len(builder.catalog.entries) > 0,
+        "sources_count": len(builder.catalog.entries) if builder else 0,
+        "mode": "local-full",
+        "has_embeddings": builder.embedder is not None if builder else False
     })
 
 
 @app.route("/api/catalog")
 def get_catalog():
     """Return full catalog."""
-    return jsonify({"catalog": catalog_entries})
+    if not builder:
+        return jsonify({"error": "Catalog not loaded"}), 500
+    return jsonify({"catalog": [e.model_dump() for e in builder.catalog.entries]})
 
 
 @app.route("/api/manifest")
 def get_manifest():
     """Return MCP tool manifests."""
-    manifest_path = "tool_manifest.json"
-    if not Path(manifest_path).exists():
-        return jsonify({"error": "Manifest not found"}), 404
+    if not builder:
+        return jsonify({"error": "Catalog not loaded"}), 500
     
-    with open(manifest_path, "r") as f:
-        return jsonify(json.load(f))
+    manifest = {}
+    for entry in builder.catalog.entries:
+        if entry.mcp_tool:
+            manifest[entry.mcp_tool.name] = {
+                "description": entry.mcp_tool.description,
+                "input_schema": entry.mcp_tool.input_schema.model_dump(),
+                "source_id": entry.source_id
+            }
+    return jsonify(manifest)
 
 
 @app.route("/api/search")
 def search():
-    """Search catalog."""
+    """Search catalog using embeddings."""
     query = request.args.get("q", "")
     if not query:
         return jsonify({"query": "", "results": []})
     
-    results = simple_search(query)
-    return jsonify({"query": query, "results": results})
+    if not builder:
+        return jsonify({"query": query, "results": [], "error": "Catalog not loaded"})
+    
+    try:
+        results = []
+        
+        # Try semantic search first
+        if builder.embedder and builder.embedder.embeddings:
+            raw_results = builder.search(query, top_k=3)
+            # Convert tuple format to object format expected by template
+            for source_id, confidence, metadata in raw_results:
+                # Get the entry to find the filename
+                entry = next((e for e in builder.catalog.entries if e.source_id == source_id), None)
+                filename = entry.connection_ref.split('/')[-1] if entry else source_id
+                results.append({
+                    "source_id": source_id,
+                    "confidence": confidence,
+                    "filename": filename,
+                    "metadata": metadata
+                })
+        
+        # Fallback to keyword search if no results
+        if not results:
+            query_lower = query.lower()
+            for entry in builder.catalog.entries:
+                semantic = entry.semantic
+                text = f"{semantic.title} {semantic.description} {' '.join(semantic.domain_tags)}".lower()
+                if query_lower in text:
+                    results.append({
+                        "source_id": entry.source_id,
+                        "confidence": 0.8,
+                        "metadata": {
+                            "source_id": entry.source_id,
+                            "source_type": entry.source_type,
+                            "title": semantic.title,
+                            "domain_tags": semantic.domain_tags
+                        }
+                    })
+        
+        return jsonify({"query": query, "results": results[:3]})
+    except Exception as e:
+        return jsonify({"query": query, "results": [], "error": str(e)})
 
 
 @app.route("/download/<filename>")
@@ -364,9 +188,9 @@ def download(filename):
         return jsonify(json.load(f))
 
 
-# Load catalog on startup
-load_catalog()
-
 if __name__ == "__main__":
+    init_catalog()
     port = int(os.getenv("PORT", 5000))
+    print(f"\n🌐 Starting server on http://127.0.0.1:{port}")
+    print("   Press CTRL+C to stop\n")
     app.run(host="0.0.0.0", port=port, debug=False)

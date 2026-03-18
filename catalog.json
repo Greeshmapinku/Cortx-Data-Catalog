@@ -1,449 +1,53 @@
 {
   "catalog": [
     {
-      "source_id": "trading.positions",
-      "source_type": "sqlite",
-      "connection_ref": "demo_data\\trading.db",
-      "profile": {
-        "row_count": 1000,
-        "columns": [
-          {
-            "name": "id",
-            "dtype": "INTEGER",
-            "null_pct": 0.0,
-            "cardinality": 1000,
-            "sample_values": [
-              1000,
-              1,
-              2,
-              3,
-              4
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "portfolio_id",
-            "dtype": "INTEGER",
-            "null_pct": 0.0,
-            "cardinality": 50,
-            "sample_values": [
-              47,
-              35,
-              45,
-              22,
-              26
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "ticker",
-            "dtype": "TEXT",
-            "null_pct": 0.0,
-            "cardinality": 10,
-            "sample_values": [
-              "AAPL",
-              "JPM",
-              "GOOGL",
-              "MSFT",
-              "TSLA"
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "quantity",
-            "dtype": "REAL",
-            "null_pct": 0.0,
-            "cardinality": 944,
-            "sample_values": [
-              4857.0,
-              6365.0,
-              8225.0,
-              3031.0,
-              8806.0
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "price",
-            "dtype": "REAL",
-            "null_pct": 0.0,
-            "cardinality": 989,
-            "sample_values": [
-              160.41,
-              122.73,
-              206.13,
-              441.01,
-              467.74
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "date",
-            "dtype": "DATE",
-            "null_pct": 0.0,
-            "cardinality": 337,
-            "sample_values": [
-              "2025-09-12",
-              "2025-05-21",
-              "2025-07-15",
-              "2025-04-03",
-              "2025-06-19"
-            ],
-            "is_pii": false,
-            "date_range": [
-              "2025-03-19T00:00:00",
-              "2026-03-17T00:00:00"
-            ]
-          },
-          {
-            "name": "sector",
-            "dtype": "TEXT",
-            "null_pct": 0.0,
-            "cardinality": 5,
-            "sample_values": [
-              "Technology",
-              "Finance",
-              "Auto",
-              "Consumer",
-              "Energy"
-            ],
-            "is_pii": false,
-            "date_range": null
-          }
-        ]
-      },
-      "semantic": {
-        "title": "Trading Positions",
-        "description": "Business data table containing 1,000 records.",
-        "domain_tags": [
-          "data"
-        ],
-        "sensitivity": "restricted",
-        "primary_entity": "record",
-        "query_hints": [
-          "filter by date for time-based analysis",
-          "use id for joining to related tables"
-        ],
-        "likely_join_keys": [
-          "portfolio_id"
-        ],
-        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
-      },
-      "mcp_tool": {
-        "name": "query_trading_positions",
-        "description": "Trading Positions - Business data table containing 1,000 records. Use when user asks about data queries. Do not use for unrelated business domains. Requires elevated permissions.",
-        "input_schema": {
-          "type": "object",
-          "properties": {
-            "sql": {
-              "type": "string",
-              "description": "SQL query to execute"
-            },
-            "portfolio_id": {
-              "type": "INTEGER",
-              "description": "Filter by portfolio_id"
-            },
-            "date": {
-              "type": "DATE",
-              "description": "Filter by date"
-            }
-          },
-          "required": [
-            "sql"
-          ]
-        }
-      }
-    },
-    {
-      "source_id": "trading.trades",
-      "source_type": "sqlite",
-      "connection_ref": "demo_data\\trading.db",
-      "profile": {
-        "row_count": 5000,
-        "columns": [
-          {
-            "name": "trade_id",
-            "dtype": "TEXT",
-            "null_pct": 0.0,
-            "cardinality": 5000,
-            "sample_values": [
-              "TXN005000",
-              "TXN000001",
-              "TXN000002",
-              "TXN000003",
-              "TXN000004"
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "portfolio_id",
-            "dtype": "INTEGER",
-            "null_pct": 0.0,
-            "cardinality": 50,
-            "sample_values": [
-              35,
-              5,
-              23,
-              12,
-              17
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "ticker",
-            "dtype": "TEXT",
-            "null_pct": 0.0,
-            "cardinality": 10,
-            "sample_values": [
-              "XOM",
-              "BAC",
-              "AAPL",
-              "NVDA",
-              "AMZN"
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "side",
-            "dtype": "TEXT",
-            "null_pct": 0.0,
-            "cardinality": 2,
-            "sample_values": [
-              "BUY",
-              "SELL"
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "quantity",
-            "dtype": "REAL",
-            "null_pct": 0.0,
-            "cardinality": 984,
-            "sample_values": [
-              895.0,
-              870.0,
-              297.0,
-              710.0,
-              224.0
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "price",
-            "dtype": "REAL",
-            "null_pct": 0.0,
-            "cardinality": 4714,
-            "sample_values": [
-              145.82,
-              277.32,
-              403.25,
-              218.6,
-              429.11
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "timestamp",
-            "dtype": "DATETIME",
-            "null_pct": 0.0,
-            "cardinality": 3853,
-            "sample_values": [
-              "2025-04-11 12:34:39",
-              "2025-12-14 21:34:39",
-              "2025-12-15 03:34:39",
-              "2025-12-04 11:34:39",
-              "2025-11-05 08:34:39"
-            ],
-            "is_pii": false,
-            "date_range": [
-              "2025-03-18T08:34:39",
-              "2026-03-18T06:34:39"
-            ]
-          }
-        ]
-      },
-      "semantic": {
-        "title": "Trading Trades",
-        "description": "Business data table containing 5,000 records.",
-        "domain_tags": [
-          "data"
-        ],
-        "sensitivity": "restricted",
-        "primary_entity": "record",
-        "query_hints": [
-          "filter by timestamp for time-based analysis",
-          "use trade_id for joining to related tables"
-        ],
-        "likely_join_keys": [
-          "trade_id",
-          "portfolio_id"
-        ],
-        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
-      },
-      "mcp_tool": {
-        "name": "query_trading_trades",
-        "description": "Trading Trades - Business data table containing 5,000 records. Use when user asks about data queries. Do not use for unrelated business domains. Requires elevated permissions.",
-        "input_schema": {
-          "type": "object",
-          "properties": {
-            "sql": {
-              "type": "string",
-              "description": "SQL query to execute"
-            },
-            "trade_id": {
-              "type": "TEXT",
-              "description": "Filter by trade_id"
-            },
-            "portfolio_id": {
-              "type": "INTEGER",
-              "description": "Filter by portfolio_id"
-            },
-            "timestamp": {
-              "type": "DATETIME",
-              "description": "Filter by timestamp"
-            }
-          },
-          "required": [
-            "sql"
-          ]
-        }
-      }
-    },
-    {
-      "source_id": "csv.customers",
+      "source_id": "csv.categories",
       "source_type": "csv",
-      "connection_ref": "demo_data\\customers.csv",
+      "connection_ref": "dataset\\Northwind_Traders\\categories.csv",
       "profile": {
-        "row_count": 500,
+        "row_count": 8,
         "columns": [
           {
-            "name": "customer_id",
+            "name": "categoryID",
             "dtype": "integer",
             "null_pct": 0.0,
-            "cardinality": 500,
+            "cardinality": 8,
             "sample_values": [
-              500,
               1,
               2,
               3,
-              484
+              4,
+              5
             ],
             "is_pii": false,
             "date_range": null
           },
           {
-            "name": "first_name",
+            "name": "categoryName",
             "dtype": "string",
             "null_pct": 0.0,
-            "cardinality": 10,
+            "cardinality": 8,
             "sample_values": [
-              "Charlie",
-              "John",
-              "Bob",
-              "Edward",
-              "Diana"
+              "Beverages",
+              "Condiments",
+              "Confections",
+              "Dairy Products",
+              "Grains & Cereals"
             ],
             "is_pii": true,
             "date_range": null
           },
           {
-            "name": "last_name",
+            "name": "description",
             "dtype": "string",
             "null_pct": 0.0,
-            "cardinality": 10,
+            "cardinality": 8,
             "sample_values": [
-              "Rodriguez",
-              "Miller",
-              "Garcia",
-              "Smith",
-              "Martinez"
-            ],
-            "is_pii": true,
-            "date_range": null
-          },
-          {
-            "name": "email",
-            "dtype": "string",
-            "null_pct": 0.0,
-            "cardinality": 500,
-            "sample_values": [
-              "charlie.martinez622@gmail.com",
-              "edward.brown861@outlook.com",
-              "edward.davis373@company.com",
-              "diana.johnson192@company.com",
-              "john.rodriguez251@gmail.com"
-            ],
-            "is_pii": true,
-            "date_range": null
-          },
-          {
-            "name": "phone",
-            "dtype": "string",
-            "null_pct": 0.0,
-            "cardinality": 500,
-            "sample_values": [
-              "+1-555-967-8957",
-              "+1-555-206-6191",
-              "+1-555-971-9322",
-              "+1-555-376-2184",
-              "+1-555-486-8374"
-            ],
-            "is_pii": true,
-            "date_range": null
-          },
-          {
-            "name": "signup_date",
-            "dtype": "string",
-            "null_pct": 0.0,
-            "cardinality": 337,
-            "sample_values": [
-              "2024-07-15",
-              "2024-09-16",
-              "2025-11-30",
-              "2025-01-08",
-              "2025-03-08"
-            ],
-            "is_pii": false,
-            "date_range": [
-              "2024-03-21T00:00:00",
-              "2026-03-18T00:00:00"
-            ]
-          },
-          {
-            "name": "tier",
-            "dtype": "string",
-            "null_pct": 0.0,
-            "cardinality": 3,
-            "sample_values": [
-              "basic",
-              "premium",
-              "enterprise"
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "lifetime_value",
-            "dtype": "float",
-            "null_pct": 0.0,
-            "cardinality": 500,
-            "sample_values": [
-              40765.49,
-              22347.05,
-              36127.74,
-              452.61,
-              34462.72
+              "Soft drinks, coffees, teas, beers, and ales",
+              "Sweet and savory sauces, relishes, spreads, and seasonings",
+              "Desserts, candies, and sweet breads",
+              "Cheeses",
+              "Breads, crackers, pasta, and cereal"
             ],
             "is_pii": false,
             "date_range": null
@@ -451,25 +55,27 @@
         ]
       },
       "semantic": {
-        "title": "Csv Customers",
-        "description": "Business data table containing 500 records.",
+        "title": "Product Categories",
+        "description": "Product category taxonomy with descriptions. Contains 8 product categories. Use for product classification and category-based reporting.",
         "domain_tags": [
-          "data"
+          "products",
+          "categories",
+          "classification"
         ],
         "sensitivity": "confidential",
-        "primary_entity": "record",
+        "primary_entity": "category",
         "query_hints": [
-          "filter by signup_date for time-based analysis",
-          "use customer_id for joining to related tables"
+          "join to products on categoryID",
+          "filter by categoryName for specific types"
         ],
         "likely_join_keys": [
-          "customer_id"
+          "categoryID"
         ],
         "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
       },
       "mcp_tool": {
-        "name": "query_csv_customers",
-        "description": "Csv Customers - Business data table containing 500 records. Use when user asks about data queries. Do not use for unrelated business domains.",
+        "name": "query_csv_categories",
+        "description": "Product Categories - Product category taxonomy with descriptions. Contains 8 product categories. Use for product classification and category-based reporting. Use when user asks about product details, inventory levels, or catalog information, product categories, classification, or taxonomy, or category information. Do not use for customer profiles, sales transactions, or HR data.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -490,143 +96,98 @@
       }
     },
     {
-      "source_id": "parquet.products",
-      "source_type": "parquet",
-      "connection_ref": "demo_data\\products.parquet",
+      "source_id": "csv.customers",
+      "source_type": "csv",
+      "connection_ref": "dataset\\Northwind_Traders\\customers.csv",
       "profile": {
-        "row_count": 200,
+        "row_count": 91,
         "columns": [
           {
-            "name": "product_id",
+            "name": "customerID",
             "dtype": "string",
             "null_pct": 0.0,
-            "cardinality": 200,
+            "cardinality": 91,
             "sample_values": [
-              "SKU00001",
-              "SKU00002",
-              "SKU00003",
-              "SKU00004",
-              "SKU00005"
+              "ALFKI",
+              "ANATR",
+              "ANTON",
+              "AROUT",
+              "BERGS"
             ],
             "is_pii": false,
             "date_range": null
           },
           {
-            "name": "name",
+            "name": "companyName",
             "dtype": "string",
             "null_pct": 0.0,
-            "cardinality": 200,
+            "cardinality": 91,
             "sample_values": [
-              "Product 1",
-              "Product 2",
-              "Product 3",
-              "Product 4",
-              "Product 5"
+              "Alfreds Futterkiste",
+              "Ana Trujillo Emparedados y helados",
+              "Antonio Moreno Taquer\u00eda",
+              "Around the Horn",
+              "Berglunds snabbk\u00f6p"
             ],
             "is_pii": true,
             "date_range": null
           },
           {
-            "name": "category",
+            "name": "contactName",
             "dtype": "string",
             "null_pct": 0.0,
-            "cardinality": 6,
+            "cardinality": 91,
             "sample_values": [
-              "Electronics",
-              "Clothing",
-              "Home & Garden",
-              "Sports",
-              "Food"
+              "Maria Anders",
+              "Ana Trujillo",
+              "Antonio Moreno",
+              "Thomas Hardy",
+              "Christina Berglund"
             ],
-            "is_pii": false,
+            "is_pii": true,
             "date_range": null
           },
           {
-            "name": "price",
-            "dtype": "double",
-            "null_pct": 0.0,
-            "cardinality": 199,
-            "sample_values": [
-              204.36,
-              235.03,
-              475.85,
-              221.65,
-              54.4
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "cost",
-            "dtype": "double",
-            "null_pct": 0.0,
-            "cardinality": 199,
-            "sample_values": [
-              100.11,
-              117.54,
-              294.84,
-              108.03,
-              31.85
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "stock_quantity",
-            "dtype": "int64",
-            "null_pct": 0.0,
-            "cardinality": 175,
-            "sample_values": [
-              871,
-              719,
-              574,
-              469,
-              157
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "supplier_id",
-            "dtype": "int64",
-            "null_pct": 0.0,
-            "cardinality": 19,
-            "sample_values": [
-              7,
-              14,
-              12,
-              9,
-              15
-            ],
-            "is_pii": false,
-            "date_range": null
-          },
-          {
-            "name": "created_date",
+            "name": "contactTitle",
             "dtype": "string",
             "null_pct": 0.0,
-            "cardinality": 180,
+            "cardinality": 12,
             "sample_values": [
-              "2024-05-26",
-              "2025-10-13",
-              "2023-08-01",
-              "2024-03-13",
-              "2024-04-26"
+              "Sales Representative",
+              "Owner",
+              "Marketing Manager",
+              "Sales Manager",
+              "Accounting Manager"
             ],
-            "is_pii": false,
-            "date_range": [
-              "2023-06-24T00:00:00",
-              "2026-03-17T00:00:00"
-            ]
+            "is_pii": true,
+            "date_range": null
           },
           {
-            "name": "is_active",
-            "dtype": "bool",
+            "name": "city",
+            "dtype": "string",
             "null_pct": 0.0,
-            "cardinality": 2,
+            "cardinality": 69,
             "sample_values": [
-              true,
-              false
+              "London",
+              "Mexico City",
+              "Sao Paulo",
+              "Madrid",
+              "Buenos Aires"
+            ],
+            "is_pii": true,
+            "date_range": null
+          },
+          {
+            "name": "country",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 21,
+            "sample_values": [
+              "USA",
+              "France",
+              "Germany",
+              "Brazil",
+              "UK"
             ],
             "is_pii": false,
             "date_range": null
@@ -634,26 +195,682 @@
         ]
       },
       "semantic": {
-        "title": "Parquet Products",
-        "description": "Business data table containing 200 records.",
+        "title": "Customer Directory",
+        "description": "B2B customer directory with company names, contact persons, and geographic locations (city, country). 91 customers across global markets. Use for customer lookup and regional analysis.",
         "domain_tags": [
-          "data"
+          "customers",
+          "sales",
+          "contacts"
         ],
         "sensitivity": "confidential",
-        "primary_entity": "record",
+        "primary_entity": "customer",
         "query_hints": [
-          "filter by created_date for time-based analysis",
-          "use product_id for joining to related tables"
+          "filter by country for regional sales analysis",
+          "use companyName for exact customer lookup",
+          "contactName and phone contain PII - handle securely"
         ],
         "likely_join_keys": [
-          "product_id",
-          "supplier_id"
+          "customerID"
         ],
         "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
       },
       "mcp_tool": {
-        "name": "query_parquet_products",
-        "description": "Parquet Products - Business data table containing 200 records. Use when user asks about data queries. Do not use for unrelated business domains.",
+        "name": "query_csv_customers",
+        "description": "Customer Directory - B2B customer directory with company names, contact persons, and geographic locations (city, country). 91 customers across global markets. Use for customer lookup and regional analysis. Use when user asks about customer information, contact details, or client profiles, sales transactions, revenue metrics, or order history, contact information, addresses, or communication details, or customer information. Do not use for product details, inventory, or non-customer data.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "filters": {
+              "type": "object",
+              "description": "Filter conditions as key-value pairs"
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Columns to return (default: all)"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "source_id": "csv.employees",
+      "source_type": "csv",
+      "connection_ref": "dataset\\Northwind_Traders\\employees.csv",
+      "profile": {
+        "row_count": 9,
+        "columns": [
+          {
+            "name": "employeeID",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 9,
+            "sample_values": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "employeeName",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 9,
+            "sample_values": [
+              "Nancy Davolio",
+              "Andrew Fuller",
+              "Janet Leverling",
+              "Margaret Peacock",
+              "Steven Buchanan"
+            ],
+            "is_pii": true,
+            "date_range": null
+          },
+          {
+            "name": "title",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 3,
+            "sample_values": [
+              "Sales Representative",
+              "Sales Manager",
+              "Vice President Sales"
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "city",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 2,
+            "sample_values": [
+              "New York",
+              "London"
+            ],
+            "is_pii": true,
+            "date_range": null
+          },
+          {
+            "name": "country",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 2,
+            "sample_values": [
+              "USA",
+              "UK"
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "reportsTo",
+            "dtype": "float",
+            "null_pct": 0.1111111111111111,
+            "cardinality": 3,
+            "sample_values": [
+              8.0,
+              5.0,
+              2.0
+            ],
+            "is_pii": false,
+            "date_range": null
+          }
+        ]
+      },
+      "semantic": {
+        "title": "Employee Directory",
+        "description": "Employee records with names, job titles, and reporting structure (reportsTo). 9 employees. Use for HR analytics and organizational hierarchy.",
+        "domain_tags": [
+          "hr",
+          "employees",
+          "organization"
+        ],
+        "sensitivity": "confidential",
+        "primary_entity": "employee",
+        "query_hints": [
+          "filter by title for role-based analysis",
+          "use reportsTo for manager/subordinate relationships",
+          "employeeName contains PII - handle securely"
+        ],
+        "likely_join_keys": [
+          "employeeID"
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      },
+      "mcp_tool": {
+        "name": "query_csv_employees",
+        "description": "Employee Directory - Employee records with names, job titles, and reporting structure (reportsTo). 9 employees. Use for HR analytics and organizational hierarchy. Use when user asks about human resources, employee analytics, or organizational data, employee records, staff information, or HR data, or employee information. Do not use for customer data, sales metrics, or product information.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "filters": {
+              "type": "object",
+              "description": "Filter conditions as key-value pairs"
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Columns to return (default: all)"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "source_id": "csv.orders",
+      "source_type": "csv",
+      "connection_ref": "dataset\\Northwind_Traders\\orders.csv",
+      "profile": {
+        "row_count": 830,
+        "columns": [
+          {
+            "name": "orderID",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 830,
+            "sample_values": [
+              11077,
+              10248,
+              10249,
+              10250,
+              10251
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "customerID",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 89,
+            "sample_values": [
+              "SAVEA",
+              "ERNSH",
+              "QUICK",
+              "HUNGO",
+              "FOLKO"
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "employeeID",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 9,
+            "sample_values": [
+              4,
+              3,
+              1,
+              8,
+              2
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "orderDate",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 480,
+            "sample_values": [
+              "2015-02-26",
+              "2015-04-14",
+              "2015-04-01",
+              "2015-03-27",
+              "2015-04-06"
+            ],
+            "is_pii": false,
+            "date_range": [
+              "2013-07-04T00:00:00",
+              "2015-05-06T00:00:00"
+            ]
+          },
+          {
+            "name": "requiredDate",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 454,
+            "sample_values": [
+              "2015-03-26",
+              "2015-04-28",
+              "2015-05-15",
+              "2015-04-27",
+              "2015-04-08"
+            ],
+            "is_pii": false,
+            "date_range": [
+              "2013-07-24T00:00:00",
+              "2015-06-11T00:00:00"
+            ]
+          },
+          {
+            "name": "shippedDate",
+            "dtype": "string",
+            "null_pct": 0.02530120481927711,
+            "cardinality": 387,
+            "sample_values": [
+              "2015-04-10",
+              "2015-03-18",
+              "2015-01-23",
+              "2015-01-30",
+              "2015-04-24"
+            ],
+            "is_pii": false,
+            "date_range": [
+              "2013-07-10T00:00:00",
+              "2015-05-06T00:00:00"
+            ]
+          },
+          {
+            "name": "shipperID",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 3,
+            "sample_values": [
+              2,
+              3,
+              1
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "freight",
+            "dtype": "float",
+            "null_pct": 0.0,
+            "cardinality": 799,
+            "sample_values": [
+              1.93,
+              4.87,
+              1.35,
+              21.19,
+              20.12
+            ],
+            "is_pii": false,
+            "date_range": null
+          }
+        ]
+      },
+      "semantic": {
+        "title": "Sales Orders",
+        "description": "Sales order headers with customer references, order dates, shipping details, and freight costs. 830 orders. Use for sales tracking and revenue analysis.",
+        "domain_tags": [
+          "sales",
+          "orders",
+          "transactions"
+        ],
+        "sensitivity": "restricted",
+        "primary_entity": "order",
+        "query_hints": [
+          "filter by orderDate for time-based analysis",
+          "join to customers on customerID",
+          "join to employees on employeeID for sales rep performance"
+        ],
+        "likely_join_keys": [
+          "orderID",
+          "customerID",
+          "employeeID",
+          "shipperID"
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      },
+      "mcp_tool": {
+        "name": "query_csv_orders",
+        "description": "Sales Orders - Sales order headers with customer references, order dates, shipping details, and freight costs. 830 orders. Use for sales tracking and revenue analysis. Use when user asks about sales transactions, revenue metrics, or order history, order details, purchase history, or transaction records, payment records, financial transactions, or purchase history, or order information. Do not use for unrelated business domains like HR or inventory. Requires elevated permissions.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "filters": {
+              "type": "object",
+              "description": "Filter conditions as key-value pairs"
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Columns to return (default: all)"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "source_id": "csv.order_details",
+      "source_type": "csv",
+      "connection_ref": "dataset\\Northwind_Traders\\order_details.csv",
+      "profile": {
+        "row_count": 2155,
+        "columns": [
+          {
+            "name": "orderID",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 830,
+            "sample_values": [
+              11077,
+              10979,
+              10847,
+              10657,
+              10670
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "productID",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 77,
+            "sample_values": [
+              59,
+              31,
+              60,
+              24,
+              56
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "unitPrice",
+            "dtype": "float",
+            "null_pct": 0.0,
+            "cardinality": 116,
+            "sample_values": [
+              18.0,
+              10.0,
+              14.0,
+              12.5,
+              19.0
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "quantity",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 55,
+            "sample_values": [
+              20,
+              30,
+              10,
+              15,
+              40
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "discount",
+            "dtype": "float",
+            "null_pct": 0.0,
+            "cardinality": 11,
+            "sample_values": [
+              0.0,
+              0.05,
+              0.1,
+              0.2,
+              0.15
+            ],
+            "is_pii": false,
+            "date_range": null
+          }
+        ]
+      },
+      "semantic": {
+        "title": "Order Line Items",
+        "description": "Sales order line items with product quantities, unit prices, and discounts. 2,155 line items. Use for revenue analysis and product sales breakdown.",
+        "domain_tags": [
+          "sales",
+          "order-items",
+          "revenue"
+        ],
+        "sensitivity": "internal",
+        "primary_entity": "order_line",
+        "query_hints": [
+          "join to orders on orderID",
+          "join to products on productID",
+          "calculate line total as unitPrice * quantity * (1 - discount)"
+        ],
+        "likely_join_keys": [
+          "orderID",
+          "productID"
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      },
+      "mcp_tool": {
+        "name": "query_csv_order_details",
+        "description": "Order Line Items - Sales order line items with product quantities, unit prices, and discounts. 2,155 line items. Use for revenue analysis and product sales breakdown. Use when user asks about sales transactions, revenue metrics, or order history, line items, order details, or product sales breakdown, revenue analysis, sales performance, or income tracking, or order_line information. Do not use for unrelated business domains like HR or inventory.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "filters": {
+              "type": "object",
+              "description": "Filter conditions as key-value pairs"
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Columns to return (default: all)"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "source_id": "csv.products",
+      "source_type": "csv",
+      "connection_ref": "dataset\\Northwind_Traders\\products.csv",
+      "profile": {
+        "row_count": 77,
+        "columns": [
+          {
+            "name": "productID",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 77,
+            "sample_values": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "productName",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 77,
+            "sample_values": [
+              "Chai",
+              "Chang",
+              "Aniseed Syrup",
+              "Chef Anton's Cajun Seasoning",
+              "Chef Anton's Gumbo Mix"
+            ],
+            "is_pii": true,
+            "date_range": null
+          },
+          {
+            "name": "quantityPerUnit",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 70,
+            "sample_values": [
+              "24 - 12 oz bottles",
+              "10 - 500 g pkgs.",
+              "24 - 250 g pkgs.",
+              "5 kg pkg.",
+              "24 - 200 g pkgs."
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "unitPrice",
+            "dtype": "float",
+            "null_pct": 0.0,
+            "cardinality": 62,
+            "sample_values": [
+              18.0,
+              14.0,
+              10.0,
+              19.0,
+              21.0
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "discontinued",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 2,
+            "sample_values": [
+              0,
+              1
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "categoryID",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 8,
+            "sample_values": [
+              3,
+              1,
+              8,
+              2,
+              4
+            ],
+            "is_pii": false,
+            "date_range": null
+          }
+        ]
+      },
+      "semantic": {
+        "title": "Product Catalog",
+        "description": "Product master catalog with names, unit prices, packaging details, and category assignments. 77 products. Use for product lookup and pricing.",
+        "domain_tags": [
+          "products",
+          "inventory",
+          "catalog"
+        ],
+        "sensitivity": "confidential",
+        "primary_entity": "product",
+        "query_hints": [
+          "filter by discontinued=0 for active products only",
+          "join to categories on categoryID",
+          "analyze unitPrice for pricing trends"
+        ],
+        "likely_join_keys": [
+          "productID",
+          "categoryID"
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      },
+      "mcp_tool": {
+        "name": "query_csv_products",
+        "description": "Product Catalog - Product master catalog with names, unit prices, packaging details, and category assignments. 77 products. Use for product lookup and pricing. Use when user asks about product details, inventory levels, or catalog information, stock levels, warehouse data, or product availability, or product information. Do not use for customer profiles, sales transactions, or HR data.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "filters": {
+              "type": "object",
+              "description": "Filter conditions as key-value pairs"
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Columns to return (default: all)"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "source_id": "csv.shippers",
+      "source_type": "csv",
+      "connection_ref": "dataset\\Northwind_Traders\\shippers.csv",
+      "profile": {
+        "row_count": 3,
+        "columns": [
+          {
+            "name": "shipperID",
+            "dtype": "integer",
+            "null_pct": 0.0,
+            "cardinality": 3,
+            "sample_values": [
+              1,
+              2,
+              3
+            ],
+            "is_pii": false,
+            "date_range": null
+          },
+          {
+            "name": "companyName",
+            "dtype": "string",
+            "null_pct": 0.0,
+            "cardinality": 3,
+            "sample_values": [
+              "Speedy Express",
+              "United Package",
+              "Federal Shipping"
+            ],
+            "is_pii": true,
+            "date_range": null
+          }
+        ]
+      },
+      "semantic": {
+        "title": "Shipping Companies",
+        "description": "Shipping carriers and freight companies with contact information. 3 shipping providers. Use for logistics analysis and shipping method selection.",
+        "domain_tags": [
+          "shipping",
+          "logistics",
+          "delivery"
+        ],
+        "sensitivity": "confidential",
+        "primary_entity": "shipper",
+        "query_hints": [
+          "join to orders on shipperID",
+          "use companyName for carrier lookup"
+        ],
+        "likely_join_keys": [
+          "shipperID"
+        ],
+        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      },
+      "mcp_tool": {
+        "name": "query_csv_shippers",
+        "description": "Shipping Companies - Shipping carriers and freight companies with contact information. 3 shipping providers. Use for logistics analysis and shipping method selection. Use when user asks about shipping methods, freight costs, or delivery logistics, supply chain, transportation, or fulfillment data, or shipper information. Do not use for product details, customer profiles, or financial analysis.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -675,11 +892,11 @@
     }
   ],
   "metadata": {
-    "total_sources": 4,
+    "total_sources": 7,
     "embedding_stats": {
       "model": "sentence-transformers/all-MiniLM-L6-v2",
       "dimension": 384,
-      "num_entries": 4
+      "num_entries": 7
     }
   }
 }

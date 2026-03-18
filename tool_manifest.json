@@ -1,58 +1,27 @@
 {
-  "query_trading_positions": {
-    "description": "Trading Positions - Business data table containing 1,000 records. Use when user asks about data queries. Do not use for unrelated business domains. Requires elevated permissions.",
+  "query_csv_categories": {
+    "description": "Product Categories - Product category taxonomy with descriptions. Contains 8 product categories. Use for product classification and category-based reporting. Use when user asks about product details, inventory levels, or catalog information, product categories, classification, or taxonomy, or category information. Do not use for customer profiles, sales transactions, or HR data.",
     "input_schema": {
       "type": "object",
       "properties": {
-        "sql": {
-          "type": "string",
-          "description": "SQL query to execute"
+        "filters": {
+          "type": "object",
+          "description": "Filter conditions as key-value pairs"
         },
-        "portfolio_id": {
-          "type": "INTEGER",
-          "description": "Filter by portfolio_id"
-        },
-        "date": {
-          "type": "DATE",
-          "description": "Filter by date"
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Columns to return (default: all)"
         }
       },
-      "required": [
-        "sql"
-      ]
+      "required": []
     },
-    "source_id": "trading.positions"
-  },
-  "query_trading_trades": {
-    "description": "Trading Trades - Business data table containing 5,000 records. Use when user asks about data queries. Do not use for unrelated business domains. Requires elevated permissions.",
-    "input_schema": {
-      "type": "object",
-      "properties": {
-        "sql": {
-          "type": "string",
-          "description": "SQL query to execute"
-        },
-        "trade_id": {
-          "type": "TEXT",
-          "description": "Filter by trade_id"
-        },
-        "portfolio_id": {
-          "type": "INTEGER",
-          "description": "Filter by portfolio_id"
-        },
-        "timestamp": {
-          "type": "DATETIME",
-          "description": "Filter by timestamp"
-        }
-      },
-      "required": [
-        "sql"
-      ]
-    },
-    "source_id": "trading.trades"
+    "source_id": "csv.categories"
   },
   "query_csv_customers": {
-    "description": "Csv Customers - Business data table containing 500 records. Use when user asks about data queries. Do not use for unrelated business domains.",
+    "description": "Customer Directory - B2B customer directory with company names, contact persons, and geographic locations (city, country). 91 customers across global markets. Use for customer lookup and regional analysis. Use when user asks about customer information, contact details, or client profiles, sales transactions, revenue metrics, or order history, contact information, addresses, or communication details, or customer information. Do not use for product details, inventory, or non-customer data.",
     "input_schema": {
       "type": "object",
       "properties": {
@@ -72,8 +41,8 @@
     },
     "source_id": "csv.customers"
   },
-  "query_parquet_products": {
-    "description": "Parquet Products - Business data table containing 200 records. Use when user asks about data queries. Do not use for unrelated business domains.",
+  "query_csv_employees": {
+    "description": "Employee Directory - Employee records with names, job titles, and reporting structure (reportsTo). 9 employees. Use for HR analytics and organizational hierarchy. Use when user asks about human resources, employee analytics, or organizational data, employee records, staff information, or HR data, or employee information. Do not use for customer data, sales metrics, or product information.",
     "input_schema": {
       "type": "object",
       "properties": {
@@ -91,6 +60,90 @@
       },
       "required": []
     },
-    "source_id": "parquet.products"
+    "source_id": "csv.employees"
+  },
+  "query_csv_orders": {
+    "description": "Sales Orders - Sales order headers with customer references, order dates, shipping details, and freight costs. 830 orders. Use for sales tracking and revenue analysis. Use when user asks about sales transactions, revenue metrics, or order history, order details, purchase history, or transaction records, payment records, financial transactions, or purchase history, or order information. Do not use for unrelated business domains like HR or inventory. Requires elevated permissions.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "filters": {
+          "type": "object",
+          "description": "Filter conditions as key-value pairs"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Columns to return (default: all)"
+        }
+      },
+      "required": []
+    },
+    "source_id": "csv.orders"
+  },
+  "query_csv_order_details": {
+    "description": "Order Line Items - Sales order line items with product quantities, unit prices, and discounts. 2,155 line items. Use for revenue analysis and product sales breakdown. Use when user asks about sales transactions, revenue metrics, or order history, line items, order details, or product sales breakdown, revenue analysis, sales performance, or income tracking, or order_line information. Do not use for unrelated business domains like HR or inventory.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "filters": {
+          "type": "object",
+          "description": "Filter conditions as key-value pairs"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Columns to return (default: all)"
+        }
+      },
+      "required": []
+    },
+    "source_id": "csv.order_details"
+  },
+  "query_csv_products": {
+    "description": "Product Catalog - Product master catalog with names, unit prices, packaging details, and category assignments. 77 products. Use for product lookup and pricing. Use when user asks about product details, inventory levels, or catalog information, stock levels, warehouse data, or product availability, or product information. Do not use for customer profiles, sales transactions, or HR data.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "filters": {
+          "type": "object",
+          "description": "Filter conditions as key-value pairs"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Columns to return (default: all)"
+        }
+      },
+      "required": []
+    },
+    "source_id": "csv.products"
+  },
+  "query_csv_shippers": {
+    "description": "Shipping Companies - Shipping carriers and freight companies with contact information. 3 shipping providers. Use for logistics analysis and shipping method selection. Use when user asks about shipping methods, freight costs, or delivery logistics, supply chain, transportation, or fulfillment data, or shipper information. Do not use for product details, customer profiles, or financial analysis.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "filters": {
+          "type": "object",
+          "description": "Filter conditions as key-value pairs"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Columns to return (default: all)"
+        }
+      },
+      "required": []
+    },
+    "source_id": "csv.shippers"
   }
 }
