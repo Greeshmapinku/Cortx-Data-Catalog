@@ -2,8 +2,10 @@ services:
   - type: web
     name: cortx-catalog-demo
     runtime: python
-    buildCommand: pip install -r requirements-render.txt
-    startCommand: python app.py
+    region: oregon
+    plan: free
+    buildCommand: "pip install --no-cache-dir -r requirements-render.txt"
+    startCommand: "python app.py"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -11,3 +13,4 @@ services:
         value: 10000
       - key: RENDER
         value: "true"
+    healthCheckPath: /api/health

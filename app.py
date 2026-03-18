@@ -755,12 +755,17 @@ if __name__ == "__main__":
     create_templates()
     
     # Initialize catalog
+    print("=" * 50)
+    print("STARTING CORTX DATA CATALOG")
+    print("=" * 50)
     print("Initializing catalog with demo data...")
     init_catalog()
     print(f"✓ Loaded {len(builder.catalog.entries)} sources")
     
     # Get port from environment
     port = int(os.getenv("PORT", 5000))
+    print(f"Starting server on port {port}...")
+    print("=" * 50)
     
-    # Run app
-    app.run(host="0.0.0.0", port=port, debug=True)
+    # Run app - NO debug mode for production!
+    app.run(host="0.0.0.0", port=port, debug=False)
