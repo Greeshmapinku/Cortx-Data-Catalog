@@ -1,190 +1,314 @@
-"""Web application for live demo hosting."""
+"""Lightweight Flask app for Render deployment - NO package dependencies."""
 
 import json
 import os
-import tempfile
 from pathlib import Path
-
-from flask import Flask, jsonify, render_template, request, send_file, make_response
+from flask import Flask, jsonify, render_template_string, request
 from flask_cors import CORS
-
-# Handle missing ML libraries on Render
-try:
-    from cortx_catalog.catalog_builder import CatalogBuilder
-    from cortx_catalog.demo import create_demo_data
-    HAS_ML = True
-except ImportError:
-    HAS_ML = False
-    # Minimal imports for Render
-    from cortx_catalog.models import Catalog, CatalogEntry, ProfileData, SemanticData, MCPTool, ColumnProfile, MCPInputSchema
 
 app = Flask(__name__)
 CORS(app)
 
-# Global catalog builder
-builder = None
+# Global catalog
+catalog_entries = []
 
 
-class SimpleCatalogBuilder:
-    """Minimal catalog builder for Render (no ML dependencies)."""
-    def __init__(self):
-        self.catalog = Catalog()
-        self.embedder = None
+def load_catalog():
+    """Load catalog from pre-generated JSON."""
+    global catalog_entries
     
-    def load_from_json(self, filepath):
-        """Load catalog from pre-generated JSON."""
-        with open(filepath, "r") as f:
-            data = json.load(f)
+    print("=" * 50)
+    print("STARTING CORTX DATA CATALOG - RENDER MODE")
+    print("=" * 50)
+    
+    catalog_path = "catalog.json"
+    if not Path(catalog_path).exists():
+        print(f"ERROR: {catalog_path} not found!")
+        return []
+    
+    print(f"Loading catalog from {catalog_path}...")
+    with open(catalog_path, "r") as f:
+        data = json.load(f)
+    
+    catalog_entries = data.get("catalog", [])
+    print(f"✓ Loaded {len(catalog_entries)} sources")
+    print("=" * 50)
+    
+    return catalog_entries
+
+
+def simple_search(query, top_k=3):
+    """Simple keyword search (no embeddings)."""
+    query_lower = query.lower()
+    results = []
+    
+    for entry in catalog_entries:
+        score = 0
+        semantic = entry.get("semantic", {})
+        text = f"{semantic.get('title', '')} {semantic.get('description', '')} {' '.join(semantic.get('domain_tags', []))}"
+        text_lower = text.lower()
         
-        for entry_data in data.get("catalog", []):
-            profile = ProfileData(
-                row_count=entry_data["profile"]["row_count"],
-                columns=[ColumnProfile(**col) for col in entry_data["profile"]["columns"]]
-            )
-            
-            semantic = SemanticData(**entry_data["semantic"])
-            
-            mcp_data = entry_data["mcp_tool"]
-            mcp_tool = MCPTool(
-                name=mcp_data["name"],
-                description=mcp_data["description"],
-                input_schema=MCPInputSchema(**mcp_data["input_schema"])
-            )
-            
-            entry = CatalogEntry(
-                source_id=entry_data["source_id"],
-                source_type=entry_data["source_type"],
-                connection_ref=entry_data["connection_ref"],
-                profile=profile,
-                semantic=semantic,
-                mcp_tool=mcp_tool
-            )
-            
-            self.catalog.add_entry(entry)
-
-
-def init_catalog():
-    """Initialize catalog with Northwind dataset."""
-    global builder
+        # Simple keyword matching
+        query_words = [w for w in query_lower.split() if len(w) > 2]
+        for word in query_words:
+            if word in text_lower:
+                score += 1
+        
+        if score > 0:
+            results.append({
+                "source_id": entry.get("source_id"),
+                "confidence": min(score / len(query_words), 1.0) if query_words else 0,
+                "metadata": {
+                    "source_id": entry.get("source_id"),
+                    "source_type": entry.get("source_type"),
+                    "title": semantic.get("title"),
+                    "domain_tags": semantic.get("domain_tags", [])
+                }
+            })
     
-    # On Render: Use simple loader without ML dependencies
-    if os.getenv("RENDER") or not HAS_ML:
-        print("Loading pre-generated catalog (Render mode)...")
-        builder = SimpleCatalogBuilder()
-        builder.load_from_json("catalog.json")
-        print(f"✓ Loaded {len(builder.catalog.entries)} sources from catalog.json")
-        return builder
-    
-    # Local development: Full pipeline with ML
-    builder = CatalogBuilder(annotate=True, embed=True)
-    
-    dataset_dir = "dataset/Northwind_Traders"
-    sources = [
-        ("csv", os.path.join(dataset_dir, "categories.csv"), None),
-        ("csv", os.path.join(dataset_dir, "customers.csv"), None),
-        ("csv", os.path.join(dataset_dir, "employees.csv"), None),
-        ("csv", os.path.join(dataset_dir, "orders.csv"), None),
-        ("csv", os.path.join(dataset_dir, "order_details.csv"), None),
-        ("csv", os.path.join(dataset_dir, "products.csv"), None),
-        ("csv", os.path.join(dataset_dir, "shippers.csv"), None),
-    ]
-    
-    print("Loading Northwind Traders dataset...")
-    for source_type, uri, table in sources:
-        try:
-            entry = builder.add_source(source_type, uri, table)
-            print(f"  ✓ {entry.source_id}: {entry.profile.row_count:,} rows")
-        except Exception as e:
-            print(f"Warning: Could not load {uri}: {e}")
-    
-    return builder
+    results.sort(key=lambda x: x["confidence"], reverse=True)
+    return results[:top_k]
 
 
 @app.route("/")
 def index():
-    """Render main page."""
-    return render_template("index.html")
-
-
-@app.route("/api/catalog")
-def get_catalog():
-    """Get full catalog."""
-    if builder is None:
-        return jsonify({"error": "Catalog not initialized"}), 500
+    """Serve the main UI."""
+    total_rows = sum(e.get("profile", {}).get("row_count", 0) for e in catalog_entries)
+    total_cols = sum(len(e.get("profile", {}).get("columns", [])) for e in catalog_entries)
     
-    data = json.loads(builder.catalog.model_dump_json())
-    return jsonify({
-        "catalog": data["entries"],
-        "metadata": {
-            "total_sources": len(data["entries"]),
-            "embedding_stats": builder.embedder.get_stats() if builder.embedder else None,
-        },
-    })
-
-
-@app.route("/api/manifest")
-def get_manifest():
-    """Get MCP tool manifests."""
-    if builder is None:
-        return jsonify({"error": "Catalog not initialized"}), 500
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Cortx Data Catalog</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #0a0a0a;
+                color: #fff;
+                line-height: 1.6;
+            }}
+            .container {{ max-width: 1200px; margin: 0 auto; padding: 20px; }}
+            header {{
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                padding: 40px 0;
+                text-align: center;
+                border-bottom: 1px solid #333;
+            }}
+            h1 {{ font-size: 2.5em; margin-bottom: 10px; }}
+            .subtitle {{ color: #888; font-size: 1.1em; }}
+            .byline {{ color: #666; font-size: 0.9em; margin-top: 10px; }}
+            .stats {{
+                display: flex;
+                justify-content: center;
+                gap: 40px;
+                margin-top: 30px;
+                flex-wrap: wrap;
+            }}
+            .stat {{
+                text-align: center;
+                padding: 20px 30px;
+                background: rgba(255,255,255,0.05);
+                border-radius: 12px;
+                border: 1px solid #333;
+            }}
+            .stat-value {{ font-size: 2em; font-weight: bold; color: #4CAF50; }}
+            .stat-label {{ color: #888; font-size: 0.9em; }}
+            .content {{ padding: 40px 0; }}
+            .entry {{
+                background: #1a1a1a;
+                border: 1px solid #333;
+                border-radius: 12px;
+                padding: 25px;
+                margin-bottom: 20px;
+            }}
+            .entry-header {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+                flex-wrap: wrap;
+                gap: 10px;
+            }}
+            .entry-title {{ font-size: 1.3em; color: #fff; }}
+            .entry-type {{
+                background: #333;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 0.8em;
+                color: #aaa;
+            }}
+            .entry-desc {{ color: #aaa; margin-bottom: 15px; }}
+            .tags {{ display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }}
+            .tag {{
+                background: rgba(76, 175, 80, 0.2);
+                color: #4CAF50;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 0.8em;
+            }}
+            .search-box {{
+                width: 100%;
+                max-width: 600px;
+                margin: 0 auto 40px;
+                display: flex;
+                gap: 10px;
+            }}
+            .search-input {{
+                flex: 1;
+                padding: 15px 20px;
+                border: 1px solid #333;
+                border-radius: 8px;
+                background: #1a1a1a;
+                color: #fff;
+                font-size: 1em;
+            }}
+            .search-btn {{
+                padding: 15px 30px;
+                background: #4CAF50;
+                color: #fff;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 1em;
+            }}
+            .search-btn:hover {{ background: #45a049; }}
+            .download-links {{
+                text-align: center;
+                margin: 30px 0;
+            }}
+            .download-links a {{
+                color: #4CAF50;
+                text-decoration: none;
+                margin: 0 15px;
+            }}
+            footer {{
+                text-align: center;
+                padding: 40px 0;
+                color: #666;
+                border-top: 1px solid #333;
+            }}
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="container">
+                <h1>🗂️ Cortx Data Catalog</h1>
+                <p class="subtitle">Semantic Layer for AI Agents</p>
+                <p class="byline">by Greeshma</p>
+                
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value">{len(catalog_entries)}</div>
+                        <div class="stat-label">Data Sources</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">{total_rows:,}</div>
+                        <div class="stat-label">Total Rows</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">{total_cols}</div>
+                        <div class="stat-label">Columns</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="container content">
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" 
+                       placeholder="Search data sources (e.g., 'customer sales')...">
+                <button class="search-btn" onclick="search()">Search</button>
+            </div>
+            
+            <div class="download-links">
+                <a href="/download/catalog.json" download>📥 Download catalog.json</a>
+                <a href="/download/tool_manifest.json" download>📥 Download tool_manifest.json</a>
+            </div>
+            
+            <div id="results"></div>
+            
+            <h2 style="margin: 40px 0 20px;">All Data Sources</h2>
+    """
     
-    manifests = {}
-    for entry in builder.catalog.entries:
-        manifests[entry.mcp_tool.name] = {
-            "description": entry.mcp_tool.description,
-            "input_schema": entry.mcp_tool.input_schema.model_dump(),
-            "source_id": entry.source_id,
-        }
+    for entry in catalog_entries:
+        semantic = entry.get("semantic", {})
+        profile = entry.get("profile", {})
+        tags = semantic.get("domain_tags", [])
+        tags_html = ''.join(f'<span class="tag">{tag}</span>' for tag in tags)
+        
+        html += f"""
+            <div class="entry">
+                <div class="entry-header">
+                    <h3 class="entry-title">{semantic.get('title', 'Untitled')}</h3>
+                    <span class="entry-type">{entry.get('source_type', 'unknown')}</span>
+                </div>
+                <p class="entry-desc">{semantic.get('description', 'No description')}</p>
+                <div class="tags">{tags_html}</div>
+                <p style="color: #666; font-size: 0.9em;">
+                    📊 {profile.get('row_count', 0):,} rows • 
+                    {len(profile.get('columns', []))} columns • 
+                    Sensitivity: {semantic.get('sensitivity', 'unknown')}
+                </p>
+            </div>
+        """
     
-    return jsonify(manifests)
-
-
-@app.route("/api/search")
-def search():
-    """Search catalog."""
-    if builder is None:
-        return jsonify({"error": "Catalog not initialized"}), 500
-    
-    query = request.args.get("q", "")
-    top_k = int(request.args.get("k", 3))
-    
-    if not query:
-        return jsonify({"error": "Query parameter 'q' required"}), 400
-    
-    # Check if search is available (embedder loaded)
-    if not hasattr(builder, 'search') or not builder.embedder:
-        return jsonify({
-            "query": query,
-            "results": [],
-            "message": "Semantic search not available in Render mode (pre-generated catalog)"
-        })
-    
-    results = builder.search(query, top_k)
-    
-    return jsonify({
-        "query": query,
-        "results": [
-            {
-                "source_id": source_id,
-                "confidence": round(score, 3),
-                "metadata": meta,
+    html += """
+        </div>
+        
+        <footer>
+            <div class="container">
+                <p>Cortx Data Catalog &copy; 2025 | Built by Greeshma</p>
+                <p style="margin-top: 10px; font-size: 0.9em;">
+                    Semantic layer enabling intelligent data discovery for AI agents
+                </p>
+            </div>
+        </footer>
+        
+        <script>
+            async function search() {
+                const query = document.getElementById('searchInput').value;
+                if (!query) return;
+                
+                const response = await fetch('/api/search?q=' + encodeURIComponent(query));
+                const data = await response.json();
+                
+                let html = '<h2 style="margin: 40px 0 20px;">Search Results</h2>';
+                
+                if (data.results.length === 0) {
+                    html += '<p style="color: #888;">No results found.</p>';
+                } else {
+                    data.results.forEach(r => {
+                        html += `
+                            <div class="entry">
+                                <div class="entry-header">
+                                    <h3 class="entry-title">${r.metadata.title}</h3>
+                                    <span class="entry-type">${(r.confidence * 100).toFixed(1)}% match</span>
+                                </div>
+                                <p style="color: #888;">Source: ${r.source_id}</p>
+                                <div class="tags">
+                                    ${r.metadata.domain_tags.map(t => `<span class="tag">${t}</span>`).join('')}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                document.getElementById('results').innerHTML = html;
             }
-            for source_id, score, meta in results
-        ],
-    })
-
-
-@app.route("/api/sources/<source_id>")
-def get_source(source_id):
-    """Get specific source details."""
-    if builder is None:
-        return jsonify({"error": "Catalog not initialized"}), 500
+            
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') search();
+            });
+        </script>
+    </body>
+    </html>
+    """
     
-    for entry in builder.catalog.entries:
-        if entry.source_id == source_id:
-            return jsonify(json.loads(entry.model_dump_json()))
-    
-    return jsonify({"error": "Source not found"}), 404
+    return render_template_string(html)
 
 
 @app.route("/api/health")
@@ -192,580 +316,57 @@ def health():
     """Health check endpoint."""
     return jsonify({
         "status": "healthy",
-        "catalog_loaded": builder is not None,
-        "sources_count": len(builder.catalog.entries) if builder else 0,
+        "catalog_loaded": len(catalog_entries) > 0,
+        "sources_count": len(catalog_entries),
+        "mode": "render-standalone"
     })
 
 
-@app.route("/download/<filename>")
-def download_file(filename):
-    """Download catalog.json or tool_manifest.json."""
-    if filename not in ['catalog.json', 'tool_manifest.json']:
-        return jsonify({"error": "Invalid filename"}), 400
+@app.route("/api/catalog")
+def get_catalog():
+    """Return full catalog."""
+    return jsonify({"catalog": catalog_entries})
+
+
+@app.route("/api/manifest")
+def get_manifest():
+    """Return MCP tool manifests."""
+    manifest_path = "tool_manifest.json"
+    if not Path(manifest_path).exists():
+        return jsonify({"error": "Manifest not found"}), 404
     
-    file_path = Path(filename)
-    if not file_path.exists():
+    with open(manifest_path, "r") as f:
+        return jsonify(json.load(f))
+
+
+@app.route("/api/search")
+def search():
+    """Search catalog."""
+    query = request.args.get("q", "")
+    if not query:
+        return jsonify({"query": "", "results": []})
+    
+    results = simple_search(query)
+    return jsonify({"query": query, "results": results})
+
+
+@app.route("/download/<filename>")
+def download(filename):
+    """Download JSON files."""
+    if filename not in ["catalog.json", "tool_manifest.json"]:
         return jsonify({"error": "File not found"}), 404
     
-    # Read file content
-    with open(file_path, 'r') as f:
-        content = f.read()
+    filepath = Path(filename)
+    if not filepath.exists():
+        return jsonify({"error": "File not found"}), 404
     
-    # Create response with proper headers
-    response = make_response(content)
-    response.headers['Content-Type'] = 'application/json'
-    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-    response.headers['Content-Length'] = len(content)
-    return response
+    with open(filepath, "r") as f:
+        return jsonify(json.load(f))
 
 
-def create_templates():
-    """Create HTML templates directory and files."""
-    templates_dir = Path(__file__).parent / "templates"
-    templates_dir.mkdir(exist_ok=True)
-    
-    html_content = '''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cortx Data Catalog</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #ffffff;
-            color: #000000;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            padding: 4rem 2rem; 
-        }
-        
-        header { 
-            text-align: center; 
-            margin-bottom: 4rem;
-            opacity: 0;
-            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        
-        header h1 { 
-            color: #000000; 
-            font-size: 2.5rem; 
-            font-weight: 300;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.5rem; 
-        }
-        
-        header .subtitle { 
-            color: #666666; 
-            font-size: 1rem;
-            font-weight: 400;
-            margin-bottom: 0.25rem;
-        }
-        
-        header .author {
-            color: #999999;
-            font-size: 0.75rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-        
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
-            gap: 2rem; 
-        }
-        
-        .card {
-            background: #ffffff;
-            border-radius: 4px;
-            padding: 2rem;
-            border: 1px solid #e5e5e5;
-            opacity: 0;
-            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            animation-delay: calc(var(--index, 0) * 0.1s);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        
-        .card:hover {
-            border-color: #000000;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
-        }
-        
-        .card:nth-child(1) { --index: 1; }
-        .card:nth-child(2) { --index: 2; }
-        .card:nth-child(3) { --index: 3; }
-        .card:nth-child(4) { --index: 4; }
-        
-        .card h2 { 
-            color: #000000; 
-            margin-bottom: 1.5rem; 
-            font-size: 0.875rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        .search-box {
-            width: 100%;
-            padding: 1rem 1.25rem;
-            border: 1px solid #e5e5e5;
-            border-radius: 0;
-            background: #ffffff;
-            color: #000000;
-            font-size: 0.9375rem;
-            margin-bottom: 1rem;
-            transition: all 0.2s ease;
-            outline: none;
-        }
-        
-        .search-box:focus {
-            border-color: #000000;
-        }
-        
-        .search-box::placeholder {
-            color: #999999;
-        }
-        
-        .btn {
-            background: #000000;
-            color: #ffffff;
-            border: none;
-            padding: 1rem 2rem;
-            font-size: 0.8125rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        
-        .btn:hover { 
-            background: #333333;
-            transform: translateY(-1px);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
-        }
-        
-        .result {
-            background: #fafafa;
-            padding: 1.25rem;
-            margin-bottom: 0.75rem;
-            border-left: 2px solid #000000;
-            opacity: 0;
-            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            transition: all 0.2s ease;
-        }
-        
-        .result:hover {
-            background: #f5f5f5;
-        }
-        
-        .result h4 { 
-            color: #000000; 
-            margin-bottom: 0.375rem;
-            font-size: 0.9375rem;
-            font-weight: 500;
-        }
-        
-        .result p { 
-            color: #666666; 
-            font-size: 0.8125rem;
-        }
-        
-        .result .score { 
-            color: #000000; 
-            font-weight: 600;
-        }
-        
-        .tag {
-            display: inline-block;
-            background: #f5f5f5;
-            color: #666666;
-            padding: 0.375rem 0.75rem;
-            font-size: 0.6875rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
-            transition: all 0.2s ease;
-        }
-        
-        .tag:hover {
-            background: #eeeeee;
-        }
-        
-        .source-card {
-            background: #fafafa;
-            padding: 1.25rem;
-            margin-bottom: 0.75rem;
-            opacity: 0;
-            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            transition: all 0.2s ease;
-        }
-        
-        .source-card:hover {
-            background: #f5f5f5;
-        }
-        
-        .source-card h4 { 
-            color: #000000; 
-            margin-bottom: 0.5rem;
-            font-size: 0.9375rem;
-            font-weight: 500;
-        }
-        
-        .source-card p { 
-            color: #666666; 
-            font-size: 0.8125rem;
-            margin-bottom: 0.75rem;
-            line-height: 1.5;
-        }
-        
-        .stats { 
-            display: flex; 
-            gap: 1.5rem; 
-            margin-top: 0.75rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid #e5e5e5;
-        }
-        
-        .stat { 
-            color: #999999; 
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        
-        .loading { 
-            color: #666666;
-            font-size: 0.8125rem;
-        }
-        
-        .error { 
-            color: #cc0000;
-            font-size: 0.8125rem;
-        }
-        
-        pre {
-            background: #fafafa;
-            padding: 1rem;
-            overflow-x: auto;
-            font-size: 0.8125rem;
-            border: 1px solid #e5e5e5;
-        }
-        
-        .endpoint {
-            background: #fafafa;
-            padding: 0.75rem 1rem;
-            font-family: 'SF Mono', Monaco, monospace;
-            font-size: 0.8125rem;
-            color: #000000;
-            border: 1px solid #e5e5e5;
-            transition: all 0.2s ease;
-        }
-        
-        .endpoint:hover {
-            background: #f5f5f5;
-            border-color: #000000;
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        .sensitivity-public { background: #f0f0f0; color: #333; }
-        .sensitivity-internal { background: #f5f5f5; color: #555; }
-        .sensitivity-confidential { background: #eeeeee; color: #333; }
-        .sensitivity-restricted { background: #e8e8e8; color: #333; }
-        
-        .manifest-card {
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        .manifest-card.expanded {
-            background: #ffffff;
-            border: 1px solid #000000;
-        }
-        
-        .manifest-card .expand-hint {
-            color: #999;
-            font-size: 0.6875rem;
-            margin-top: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        .manifest-card.expanded .expand-hint {
-            display: none;
-        }
-        
-        .manifest-card .full-desc {
-            display: none;
-            margin-top: 0.75rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid #e5e5e5;
-        }
-        
-        .manifest-card.expanded .full-desc {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .manifest-card .short-desc {
-            display: block;
-        }
-        
-        .manifest-card.expanded .short-desc {
-            display: none;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Cortx Data Catalog</h1>
-            <p class="subtitle">Semantic Layer Builder</p>
-            <p class="author">by Greeshma</p>
-        </header>
-        
-        <div class="grid">
-            <div class="card">
-                <h2>Semantic Search</h2>
-                <input type="text" class="search-box" id="searchInput" 
-                       placeholder="Search for data sources...">
-                <button class="btn" onclick="search()">Search</button>
-                <div id="searchResults" style="margin-top: 1.5rem;"></div>
-            </div>
-            
-            <div class="card">
-                <h2>Data Sources</h2>
-                <div id="sourcesList"></div>
-            </div>
-            
-            <div class="card">
-                <h2>API Endpoints</h2>
-                <p style="margin-bottom: 1.5rem; color: #666; font-size: 0.8125rem;">Available endpoints:</p>
-                <div class="endpoint">GET /api/catalog</div>
-                <div class="endpoint" style="margin-top: 0.5rem;">GET /api/manifest</div>
-                <div class="endpoint" style="margin-top: 0.5rem;">GET /api/search?q=query</div>
-                <div class="endpoint" style="margin-top: 0.5rem;">GET /api/health</div>
-            </div>
-            
-            <div class="card">
-                <h2>MCP Tool Manifests</h2>
-                <div id="manifestList"></div>
-            </div>
-            
-            <div class="card" style="grid-column: 1 / -1;">
-                <h2>Raw JSON Outputs</h2>
-                <p style="margin-bottom: 1rem; color: #666; font-size: 0.8125rem;">These JSON files are generated by the CLI tool for Cortx agent consumption:</p>
-                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                    <button class="btn" onclick="showRawJson('catalog')">View catalog.json</button>
-                    <button class="btn" onclick="showRawJson('manifest')" style="background: #fff; color: #000; border: 1px solid #000;">View tool_manifest.json</button>
-                    <a href="/download/catalog.json" download="catalog.json" class="btn" style="background: #333; text-decoration: none; display: inline-flex; align-items: center;">Download catalog.json</a>
-                    <a href="/download/tool_manifest.json" download="tool_manifest.json" class="btn" style="background: #555; text-decoration: none; display: inline-flex; align-items: center;">Download tool_manifest.json</a>
-                </div>
-                <div id="rawJsonContainer" style="display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span id="jsonFilename" style="font-size: 0.75rem; color: #666; font-family: monospace;"></span>
-                        <span style="font-size: 0.75rem; color: #999;">This is what the CLI generates</span>
-                    </div>
-                    <pre id="rawJsonDisplay" style="background: #fafafa; border: 1px solid #e5e5e5; padding: 1rem; overflow-x: auto; font-size: 0.75rem; max-height: 400px; overflow-y: auto;"></pre>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        async function loadSources() {
-            try {
-                const response = await fetch('/api/catalog');
-                const data = await response.json();
-                
-                const container = document.getElementById('sourcesList');
-                container.innerHTML = data.catalog.map((source, index) => `
-                    <div class="source-card" style="animation-delay: ${index * 0.05}s">
-                        <h4>${source.semantic.title}</h4>
-                        <p>${source.semantic.description}</p>
-                        <div>
-                            ${source.semantic.domain_tags.map(t => `<span class="tag">${t}</span>`).join('')}
-                            <span class="tag sensitivity-${source.semantic.sensitivity}">
-                                ${source.semantic.sensitivity}
-                            </span>
-                        </div>
-                        <div class="stats">
-                            <span class="stat">${source.profile.row_count.toLocaleString()} rows</span>
-                            <span class="stat">${source.source_type}</span>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                document.getElementById('sourcesList').innerHTML = '<p class="error">Failed to load sources</p>';
-            }
-        }
-        
-        async function search() {
-            const query = document.getElementById('searchInput').value;
-            if (!query) return;
-            
-            const container = document.getElementById('searchResults');
-            container.innerHTML = '<p class="loading">Searching...</p>';
-            
-            try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-                const data = await response.json();
-                
-                if (data.results.length === 0) {
-                    container.innerHTML = '<p style="color: #666; font-size: 0.8125rem;">No results found</p>';
-                    return;
-                }
-                
-                container.innerHTML = data.results.map((r, index) => `
-                    <div class="result" style="animation-delay: ${index * 0.05}s">
-                        <h4>${r.metadata.title}</h4>
-                        <p>${r.metadata.source_id} | Confidence: <span class="score">${(r.confidence * 100).toFixed(1)}%</span></p>
-                    </div>
-                `).join('');
-            } catch (error) {
-                container.innerHTML = '<p class="error">Search failed</p>';
-            }
-        }
-        
-        async function loadManifests() {
-            try {
-                const response = await fetch('/api/manifest');
-                const data = await response.json();
-                
-                const container = document.getElementById('manifestList');
-                const tools = Object.entries(data);
-                
-                container.innerHTML = tools.map(([name, manifest], index) => `
-                    <div class="source-card manifest-card" onclick="toggleManifest(this)" style="animation-delay: ${index * 0.05}s">
-                        <h4>${name}</h4>
-                        <p class="short-desc" style="font-size: 0.8125rem; color: #666;">${manifest.description.substring(0, 100)}...</p>
-                        <p class="expand-hint">Click to expand</p>
-                        <div class="full-desc">
-                            <p style="font-size: 0.8125rem; color: #333; line-height: 1.6;">${manifest.description}</p>
-                            <div style="margin-top: 1rem;">
-                                <p style="font-size: 0.6875rem; color: #999; margin-bottom: 0.5rem;">INPUT SCHEMA:</p>
-                                <pre style="font-size: 0.75rem;">${JSON.stringify(manifest.input_schema, null, 2)}</pre>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                document.getElementById('manifestList').innerHTML = '<p class="error">Failed to load manifests</p>';
-            }
-        }
-        
-        function toggleManifest(card) {
-            const wasExpanded = card.classList.contains('expanded');
-            
-            // Collapse all other cards
-            document.querySelectorAll('.manifest-card').forEach(c => c.classList.remove('expanded'));
-            
-            // Toggle this card
-            if (!wasExpanded) {
-                card.classList.add('expanded');
-            }
-        }
-        
-        let currentJsonData = null;
-        let currentJsonType = null;
-        
-        async function showRawJson(type) {
-            const container = document.getElementById('rawJsonContainer');
-            const display = document.getElementById('rawJsonDisplay');
-            const filename = document.getElementById('jsonFilename');
-            
-            try {
-                if (type === 'catalog') {
-                    const response = await fetch('/api/catalog');
-                    currentJsonData = await response.json();
-                    filename.textContent = 'catalog.json';
-                    display.textContent = JSON.stringify(currentJsonData, null, 2);
-                    currentJsonType = 'catalog';
-                } else {
-                    const response = await fetch('/api/manifest');
-                    currentJsonData = await response.json();
-                    filename.textContent = 'tool_manifest.json';
-                    display.textContent = JSON.stringify(currentJsonData, null, 2);
-                    currentJsonType = 'manifest';
-                }
-                container.style.display = 'block';
-                container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } catch (error) {
-                display.textContent = 'Error loading JSON: ' + error.message;
-                container.style.display = 'block';
-            }
-        }
-        
-        document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') search();
-        });
-        
-        loadSources();
-        loadManifests();
-    </script>
-</body>
-</html>'''
-    
-    (templates_dir / "index.html").write_text(html_content, encoding='utf-8')
-
+# Load catalog on startup
+load_catalog()
 
 if __name__ == "__main__":
-    # Create templates
-    create_templates()
-    
-    # Initialize catalog
-    print("=" * 50)
-    print("STARTING CORTX DATA CATALOG")
-    print("=" * 50)
-    print("Initializing catalog with demo data...")
-    init_catalog()
-    print(f"✓ Loaded {len(builder.catalog.entries)} sources")
-    
-    # Get port from environment
     port = int(os.getenv("PORT", 5000))
-    print(f"Starting server on port {port}...")
-    print("=" * 50)
-    
-    # Run app - NO debug mode for production!
     app.run(host="0.0.0.0", port=port, debug=False)
