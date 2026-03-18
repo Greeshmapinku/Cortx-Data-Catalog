@@ -56,17 +56,20 @@
       },
       "semantic": {
         "title": "Product Categories",
-        "description": "Product category taxonomy with descriptions. Contains 8 product categories. Use for product classification and category-based reporting.",
+        "description": "Master category list capturing product groupings with descriptive names and detailed explanations. Contains category identifiers, names, and descriptions for product classification and inventory management. Use for product categorization, filtering, and grouping.",
         "domain_tags": [
           "products",
-          "categories",
+          "inventory",
+          "categorization",
           "classification"
         ],
-        "sensitivity": "confidential",
+        "sensitivity": "internal",
         "primary_entity": "category",
         "query_hints": [
-          "join to products on categoryID",
-          "filter by categoryName for specific types"
+          "filter by categoryID for specific category analysis",
+          "use categoryName for exact category lookup",
+          "analyze description for category insights",
+          "join to products on categoryID for product categorization"
         ],
         "likely_join_keys": [
           "categoryID"
@@ -75,7 +78,7 @@
       },
       "mcp_tool": {
         "name": "query_csv_categories",
-        "description": "Product Categories - Product category taxonomy with descriptions. Contains 8 product categories. Use for product classification and category-based reporting. Use when user asks about product details, inventory levels, or catalog information, product categories, classification, or taxonomy, or category information. Do not use for customer profiles, sales transactions, or HR data.",
+        "description": "Product Categories - Master category list capturing product groupings with descriptive names and detailed explanations. Contains category identifiers, names, and descriptions for product classification and inventory management. Use for product categorization, filtering, and grouping. Use when user asks about product details, inventory levels, or catalog information, stock levels, warehouse data, or product availability, or category information. Do not use for customer profiles, sales transactions, or HR data.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -184,8 +187,8 @@
             "cardinality": 21,
             "sample_values": [
               "USA",
-              "France",
               "Germany",
+              "France",
               "Brazil",
               "UK"
             ],
@@ -196,18 +199,21 @@
       },
       "semantic": {
         "title": "Customer Directory",
-        "description": "B2B customer directory with company names, contact persons, and geographic locations (city, country). 91 customers across global markets. Use for customer lookup and regional analysis.",
+        "description": "Core customer records containing company information, contact details, job titles, and geographic locations. Represents B2B customer relationships across global markets, with columns like companyName, contactName, and city providing key insights. Use for customer segmentation, regional analysis, and contact lookup.",
         "domain_tags": [
           "customers",
           "sales",
-          "contacts"
+          "b2b",
+          "contacts",
+          "geography"
         ],
         "sensitivity": "confidential",
         "primary_entity": "customer",
         "query_hints": [
           "filter by country for regional sales analysis",
           "use companyName for exact customer lookup",
-          "contactName and phone contain PII - handle securely"
+          "group by city for geographic distribution",
+          "contactName and contactTitle contain PII - handle securely"
         ],
         "likely_join_keys": [
           "customerID"
@@ -216,7 +222,7 @@
       },
       "mcp_tool": {
         "name": "query_csv_customers",
-        "description": "Customer Directory - B2B customer directory with company names, contact persons, and geographic locations (city, country). 91 customers across global markets. Use for customer lookup and regional analysis. Use when user asks about customer information, contact details, or client profiles, sales transactions, revenue metrics, or order history, contact information, addresses, or communication details, or customer information. Do not use for product details, inventory, or non-customer data.",
+        "description": "Customer Directory - Core customer records containing company information, contact details, job titles, and geographic locations. Represents B2B customer relationships across global markets, with columns like companyName, contactName, and city providing key insights. Use for customer segmentation, regional analysis, and contact lookup. Use when user asks about customer information, contact details, or client profiles, sales transactions, revenue metrics, or order history, business customers, corporate accounts, or wholesale data, contact information, addresses, or communication details, regional analysis, location data, or geographic distribution, or customer information. Do not use for product details, inventory, or non-customer data.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -326,28 +332,31 @@
         ]
       },
       "semantic": {
-        "title": "Employee Directory",
-        "description": "Employee records with names, job titles, and reporting structure (reportsTo). 9 employees. Use for HR analytics and organizational hierarchy.",
+        "title": "Employee Roster",
+        "description": "Employee records containing personal and professional details, including job titles, geographic locations, and management hierarchies. Represents the organizational structure and personnel information, with columns like employeeName and city containing personally identifiable information (PII). Use for employee lookups, organizational analysis, and HR reporting.",
         "domain_tags": [
           "hr",
           "employees",
-          "organization"
+          "organization",
+          "management"
         ],
         "sensitivity": "confidential",
         "primary_entity": "employee",
         "query_hints": [
           "filter by title for role-based analysis",
-          "use reportsTo for manager/subordinate relationships",
-          "employeeName contains PII - handle securely"
+          "join to other tables on employeeID for employee-centric insights",
+          "group by country for geographic distribution of employees",
+          "handle employeeName and city with care due to PII"
         ],
         "likely_join_keys": [
-          "employeeID"
+          "employeeID",
+          "reportsTo"
         ],
         "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
       },
       "mcp_tool": {
         "name": "query_csv_employees",
-        "description": "Employee Directory - Employee records with names, job titles, and reporting structure (reportsTo). 9 employees. Use for HR analytics and organizational hierarchy. Use when user asks about human resources, employee analytics, or organizational data, employee records, staff information, or HR data, or employee information. Do not use for customer data, sales metrics, or product information.",
+        "description": "Employee Roster - Employee records containing personal and professional details, including job titles, geographic locations, and management hierarchies. Represents the organizational structure and personnel information, with columns like employeeName and city containing personally identifiable information (PII). Use for employee lookups, organizational analysis, and HR reporting. Use when user asks about human resources, employee analytics, or organizational data, employee records, staff information, or HR data, or employee information. Do not use for customer data, sales metrics, or product information.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -380,11 +389,11 @@
             "null_pct": 0.0,
             "cardinality": 830,
             "sample_values": [
-              11077,
               10248,
               10249,
               10250,
-              10251
+              10251,
+              10252
             ],
             "is_pii": false,
             "date_range": null
@@ -398,8 +407,8 @@
               "SAVEA",
               "ERNSH",
               "QUICK",
-              "HUNGO",
-              "FOLKO"
+              "FOLKO",
+              "HUNGO"
             ],
             "is_pii": false,
             "date_range": null
@@ -426,16 +435,13 @@
             "cardinality": 480,
             "sample_values": [
               "2015-02-26",
-              "2015-04-14",
-              "2015-04-01",
-              "2015-03-27",
-              "2015-04-06"
+              "2015-03-03",
+              "2015-03-06",
+              "2015-03-11",
+              "2015-03-16"
             ],
             "is_pii": false,
-            "date_range": [
-              "2013-07-04T00:00:00",
-              "2015-05-06T00:00:00"
-            ]
+            "date_range": null
           },
           {
             "name": "requiredDate",
@@ -445,15 +451,12 @@
             "sample_values": [
               "2015-03-26",
               "2015-04-28",
-              "2015-05-15",
-              "2015-04-27",
-              "2015-04-08"
+              "2014-02-13",
+              "2015-03-24",
+              "2015-04-17"
             ],
             "is_pii": false,
-            "date_range": [
-              "2013-07-24T00:00:00",
-              "2015-06-11T00:00:00"
-            ]
+            "date_range": null
           },
           {
             "name": "shippedDate",
@@ -463,15 +466,12 @@
             "sample_values": [
               "2015-04-10",
               "2015-03-18",
-              "2015-01-23",
               "2015-01-30",
-              "2015-04-24"
+              "2015-01-23",
+              "2015-04-08"
             ],
             "is_pii": false,
-            "date_range": [
-              "2013-07-10T00:00:00",
-              "2015-05-06T00:00:00"
-            ]
+            "date_range": null
           },
           {
             "name": "shipperID",
@@ -492,11 +492,11 @@
             "null_pct": 0.0,
             "cardinality": 799,
             "sample_values": [
-              1.93,
-              4.87,
+              12.69,
               1.35,
-              21.19,
-              20.12
+              1.15,
+              6.27,
+              0.56
             ],
             "is_pii": false,
             "date_range": null
@@ -505,30 +505,32 @@
       },
       "semantic": {
         "title": "Sales Orders",
-        "description": "Sales order headers with customer references, order dates, shipping details, and freight costs. 830 orders. Use for sales tracking and revenue analysis.",
+        "description": "Sales transaction records capturing customer purchases with order dates, required shipment dates, and actual shipment dates. Contains details on shipping costs, responsible employees, and shipper information. Use for revenue analysis, sales performance tracking, and customer purchase history.",
         "domain_tags": [
           "sales",
           "orders",
-          "transactions"
+          "revenue",
+          "shipping"
         ],
-        "sensitivity": "restricted",
+        "sensitivity": "internal",
         "primary_entity": "order",
         "query_hints": [
           "filter by orderDate for time-based analysis",
-          "join to customers on customerID",
-          "join to employees on employeeID for sales rep performance"
+          "join to customers on customerID for customer insights",
+          "join to employees on employeeID for sales rep performance",
+          "sum freight for shipping cost analysis"
         ],
         "likely_join_keys": [
-          "orderID",
           "customerID",
           "employeeID",
-          "shipperID"
+          "shipperID",
+          "orderID"
         ],
         "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
       },
       "mcp_tool": {
         "name": "query_csv_orders",
-        "description": "Sales Orders - Sales order headers with customer references, order dates, shipping details, and freight costs. 830 orders. Use for sales tracking and revenue analysis. Use when user asks about sales transactions, revenue metrics, or order history, order details, purchase history, or transaction records, payment records, financial transactions, or purchase history, or order information. Do not use for unrelated business domains like HR or inventory. Requires elevated permissions.",
+        "description": "Sales Orders - Sales transaction records capturing customer purchases with order dates, required shipment dates, and actual shipment dates. Contains details on shipping costs, responsible employees, and shipper information. Use for revenue analysis, sales performance tracking, and customer purchase history. Use when user asks about sales transactions, revenue metrics, or order history, order details, purchase history, or transaction records, revenue analysis, sales performance, or income tracking, shipping methods, freight costs, or delivery logistics, or order information. Do not use for unrelated business domains like HR or inventory.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -562,10 +564,10 @@
             "cardinality": 830,
             "sample_values": [
               11077,
-              10979,
-              10847,
               10657,
-              10670
+              10847,
+              10979,
+              10273
             ],
             "is_pii": false,
             "date_range": null
@@ -577,8 +579,8 @@
             "cardinality": 77,
             "sample_values": [
               59,
-              31,
               60,
+              31,
               24,
               56
             ],
@@ -634,18 +636,20 @@
       },
       "semantic": {
         "title": "Order Line Items",
-        "description": "Sales order line items with product quantities, unit prices, and discounts. 2,155 line items. Use for revenue analysis and product sales breakdown.",
+        "description": "Detailed records of products within sales orders, including pricing, quantities, and applied discounts. Contains orderID for linking to sales orders, productID for product lookups, and financial data such as unitPrice and discount. Use for revenue analysis, sales reporting, and product performance tracking.",
         "domain_tags": [
           "sales",
-          "order-items",
-          "revenue"
+          "orders",
+          "products",
+          "transactions"
         ],
-        "sensitivity": "internal",
-        "primary_entity": "order_line",
+        "sensitivity": "restricted",
+        "primary_entity": "order",
         "query_hints": [
-          "join to orders on orderID",
-          "join to products on productID",
-          "calculate line total as unitPrice * quantity * (1 - discount)"
+          "filter by orderID for specific order analysis",
+          "join to orders on orderID for sales order insights",
+          "join to products on productID for product details",
+          "calculate total revenue by multiplying unitPrice * quantity and summing"
         ],
         "likely_join_keys": [
           "orderID",
@@ -655,7 +659,7 @@
       },
       "mcp_tool": {
         "name": "query_csv_order_details",
-        "description": "Order Line Items - Sales order line items with product quantities, unit prices, and discounts. 2,155 line items. Use for revenue analysis and product sales breakdown. Use when user asks about sales transactions, revenue metrics, or order history, line items, order details, or product sales breakdown, revenue analysis, sales performance, or income tracking, or order_line information. Do not use for unrelated business domains like HR or inventory.",
+        "description": "Order Line Items - Detailed records of products within sales orders, including pricing, quantities, and applied discounts. Contains orderID for linking to sales orders, productID for product lookups, and financial data such as unitPrice and discount. Use for revenue analysis, sales reporting, and product performance tracking. Use when user asks about sales transactions, revenue metrics, or order history, order details, purchase history, or transaction records, product details, inventory levels, or catalog information, payment records, financial transactions, or purchase history, or order information. Do not use for unrelated business domains like HR or inventory. Requires elevated permissions.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -720,9 +724,9 @@
             "sample_values": [
               "24 - 12 oz bottles",
               "10 - 500 g pkgs.",
+              "24 - 200 g pkgs.",
               "24 - 250 g pkgs.",
-              "5 kg pkg.",
-              "24 - 200 g pkgs."
+              "5 kg pkg."
             ],
             "is_pii": false,
             "date_range": null
@@ -762,8 +766,8 @@
             "sample_values": [
               3,
               1,
-              8,
               2,
+              8,
               4
             ],
             "is_pii": false,
@@ -772,19 +776,21 @@
         ]
       },
       "semantic": {
-        "title": "Product Catalog",
-        "description": "Product master catalog with names, unit prices, packaging details, and category assignments. 77 products. Use for product lookup and pricing.",
+        "title": "Product Inventory",
+        "description": "Master product catalog containing product details, pricing, packaging, and availability status. Includes product names, quantities per unit, unit prices, and discontinuation status. Use for product lookups, pricing analysis, and inventory management.",
         "domain_tags": [
           "products",
           "inventory",
+          "pricing",
           "catalog"
         ],
         "sensitivity": "confidential",
         "primary_entity": "product",
         "query_hints": [
           "filter by discontinued=0 for active products only",
-          "join to categories on categoryID",
-          "analyze unitPrice for pricing trends"
+          "join to categories on categoryID for category-based analysis",
+          "analyze unitPrice for pricing trends",
+          "group by categoryID for category performance"
         ],
         "likely_join_keys": [
           "productID",
@@ -794,7 +800,7 @@
       },
       "mcp_tool": {
         "name": "query_csv_products",
-        "description": "Product Catalog - Product master catalog with names, unit prices, packaging details, and category assignments. 77 products. Use for product lookup and pricing. Use when user asks about product details, inventory levels, or catalog information, stock levels, warehouse data, or product availability, or product information. Do not use for customer profiles, sales transactions, or HR data.",
+        "description": "Product Inventory - Master product catalog containing product details, pricing, packaging, and availability status. Includes product names, quantities per unit, unit prices, and discontinuation status. Use for product lookups, pricing analysis, and inventory management. Use when user asks about product details, inventory levels, or catalog information, stock levels, warehouse data, or product availability, or product information. Do not use for customer profiles, sales transactions, or HR data.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -850,18 +856,21 @@
         ]
       },
       "semantic": {
-        "title": "Shipping Companies",
-        "description": "Shipping carriers and freight companies with contact information. 3 shipping providers. Use for logistics analysis and shipping method selection.",
+        "title": "Shipping Providers",
+        "description": "Directory of shipping companies with unique identifiers and company names. Contains key information for logistics and supply chain management, including shipper details and contact information. Use for shipping carrier lookup, logistics planning, and supply chain optimization.",
         "domain_tags": [
           "shipping",
           "logistics",
-          "delivery"
+          "supply_chain",
+          "carriers"
         ],
         "sensitivity": "confidential",
         "primary_entity": "shipper",
         "query_hints": [
-          "join to orders on shipperID",
-          "use companyName for carrier lookup"
+          "filter by shipperID for specific carrier details",
+          "use companyName for exact shipper lookup",
+          "group by companyName for carrier performance analysis",
+          "handle companyName with care due to PII"
         ],
         "likely_join_keys": [
           "shipperID"
@@ -870,7 +879,7 @@
       },
       "mcp_tool": {
         "name": "query_csv_shippers",
-        "description": "Shipping Companies - Shipping carriers and freight companies with contact information. 3 shipping providers. Use for logistics analysis and shipping method selection. Use when user asks about shipping methods, freight costs, or delivery logistics, supply chain, transportation, or fulfillment data, or shipper information. Do not use for product details, customer profiles, or financial analysis.",
+        "description": "Shipping Providers - Directory of shipping companies with unique identifiers and company names. Contains key information for logistics and supply chain management, including shipper details and contact information. Use for shipping carrier lookup, logistics planning, and supply chain optimization. Use when user asks about shipping methods, freight costs, or delivery logistics, supply chain, transportation, or fulfillment data, or shipper information. Do not use for product details, customer profiles, or financial analysis.",
         "input_schema": {
           "type": "object",
           "properties": {

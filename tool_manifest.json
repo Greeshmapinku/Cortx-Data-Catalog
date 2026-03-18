@@ -1,6 +1,6 @@
 {
   "query_csv_categories": {
-    "description": "Product Categories - Product category taxonomy with descriptions. Contains 8 product categories. Use for product classification and category-based reporting. Use when user asks about product details, inventory levels, or catalog information, product categories, classification, or taxonomy, or category information. Do not use for customer profiles, sales transactions, or HR data.",
+    "description": "Product Categories - Master category list capturing product groupings with descriptive names and detailed explanations. Contains category identifiers, names, and descriptions for product classification and inventory management. Use for product categorization, filtering, and grouping. Use when user asks about product details, inventory levels, or catalog information, stock levels, warehouse data, or product availability, or category information. Do not use for customer profiles, sales transactions, or HR data.",
     "input_schema": {
       "type": "object",
       "properties": {
@@ -21,7 +21,7 @@
     "source_id": "csv.categories"
   },
   "query_csv_customers": {
-    "description": "Customer Directory - B2B customer directory with company names, contact persons, and geographic locations (city, country). 91 customers across global markets. Use for customer lookup and regional analysis. Use when user asks about customer information, contact details, or client profiles, sales transactions, revenue metrics, or order history, contact information, addresses, or communication details, or customer information. Do not use for product details, inventory, or non-customer data.",
+    "description": "Customer Directory - Core customer records containing company information, contact details, job titles, and geographic locations. Represents B2B customer relationships across global markets, with columns like companyName, contactName, and city providing key insights. Use for customer segmentation, regional analysis, and contact lookup. Use when user asks about customer information, contact details, or client profiles, sales transactions, revenue metrics, or order history, business customers, corporate accounts, or wholesale data, contact information, addresses, or communication details, regional analysis, location data, or geographic distribution, or customer information. Do not use for product details, inventory, or non-customer data.",
     "input_schema": {
       "type": "object",
       "properties": {
@@ -42,7 +42,7 @@
     "source_id": "csv.customers"
   },
   "query_csv_employees": {
-    "description": "Employee Directory - Employee records with names, job titles, and reporting structure (reportsTo). 9 employees. Use for HR analytics and organizational hierarchy. Use when user asks about human resources, employee analytics, or organizational data, employee records, staff information, or HR data, or employee information. Do not use for customer data, sales metrics, or product information.",
+    "description": "Employee Roster - Employee records containing personal and professional details, including job titles, geographic locations, and management hierarchies. Represents the organizational structure and personnel information, with columns like employeeName and city containing personally identifiable information (PII). Use for employee lookups, organizational analysis, and HR reporting. Use when user asks about human resources, employee analytics, or organizational data, employee records, staff information, or HR data, or employee information. Do not use for customer data, sales metrics, or product information.",
     "input_schema": {
       "type": "object",
       "properties": {
@@ -63,7 +63,7 @@
     "source_id": "csv.employees"
   },
   "query_csv_orders": {
-    "description": "Sales Orders - Sales order headers with customer references, order dates, shipping details, and freight costs. 830 orders. Use for sales tracking and revenue analysis. Use when user asks about sales transactions, revenue metrics, or order history, order details, purchase history, or transaction records, payment records, financial transactions, or purchase history, or order information. Do not use for unrelated business domains like HR or inventory. Requires elevated permissions.",
+    "description": "Sales Orders - Sales transaction records capturing customer purchases with order dates, required shipment dates, and actual shipment dates. Contains details on shipping costs, responsible employees, and shipper information. Use for revenue analysis, sales performance tracking, and customer purchase history. Use when user asks about sales transactions, revenue metrics, or order history, order details, purchase history, or transaction records, revenue analysis, sales performance, or income tracking, shipping methods, freight costs, or delivery logistics, or order information. Do not use for unrelated business domains like HR or inventory.",
     "input_schema": {
       "type": "object",
       "properties": {
@@ -84,7 +84,7 @@
     "source_id": "csv.orders"
   },
   "query_csv_order_details": {
-    "description": "Order Line Items - Sales order line items with product quantities, unit prices, and discounts. 2,155 line items. Use for revenue analysis and product sales breakdown. Use when user asks about sales transactions, revenue metrics, or order history, line items, order details, or product sales breakdown, revenue analysis, sales performance, or income tracking, or order_line information. Do not use for unrelated business domains like HR or inventory.",
+    "description": "Order Line Items - Detailed records of products within sales orders, including pricing, quantities, and applied discounts. Contains orderID for linking to sales orders, productID for product lookups, and financial data such as unitPrice and discount. Use for revenue analysis, sales reporting, and product performance tracking. Use when user asks about sales transactions, revenue metrics, or order history, order details, purchase history, or transaction records, product details, inventory levels, or catalog information, payment records, financial transactions, or purchase history, or order information. Do not use for unrelated business domains like HR or inventory. Requires elevated permissions.",
     "input_schema": {
       "type": "object",
       "properties": {
@@ -105,7 +105,7 @@
     "source_id": "csv.order_details"
   },
   "query_csv_products": {
-    "description": "Product Catalog - Product master catalog with names, unit prices, packaging details, and category assignments. 77 products. Use for product lookup and pricing. Use when user asks about product details, inventory levels, or catalog information, stock levels, warehouse data, or product availability, or product information. Do not use for customer profiles, sales transactions, or HR data.",
+    "description": "Product Inventory - Master product catalog containing product details, pricing, packaging, and availability status. Includes product names, quantities per unit, unit prices, and discontinuation status. Use for product lookups, pricing analysis, and inventory management. Use when user asks about product details, inventory levels, or catalog information, stock levels, warehouse data, or product availability, or product information. Do not use for customer profiles, sales transactions, or HR data.",
     "input_schema": {
       "type": "object",
       "properties": {
@@ -126,7 +126,7 @@
     "source_id": "csv.products"
   },
   "query_csv_shippers": {
-    "description": "Shipping Companies - Shipping carriers and freight companies with contact information. 3 shipping providers. Use for logistics analysis and shipping method selection. Use when user asks about shipping methods, freight costs, or delivery logistics, supply chain, transportation, or fulfillment data, or shipper information. Do not use for product details, customer profiles, or financial analysis.",
+    "description": "Shipping Providers - Directory of shipping companies with unique identifiers and company names. Contains key information for logistics and supply chain management, including shipper details and contact information. Use for shipping carrier lookup, logistics planning, and supply chain optimization. Use when user asks about shipping methods, freight costs, or delivery logistics, supply chain, transportation, or fulfillment data, or shipper information. Do not use for product details, customer profiles, or financial analysis.",
     "input_schema": {
       "type": "object",
       "properties": {

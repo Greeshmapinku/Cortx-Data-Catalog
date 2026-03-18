@@ -66,6 +66,11 @@ export GROQ_API_KEY="your-key-here"  # Mac/Linux
 # Profile a CSV file
 cortx-catalog-gen --source csv --uri ./customers.csv --output catalog.json
 
+# profile a local csv file
+cortx-catalog-gen --source csv --uri dataset/Northwind_Traders/customers.csv
+cortx-catalog-gen --source csv --uri dataset/Northwind_Traders/orders.csv
+cortx-catalog-gen --source csv --uri dataset/Northwind_Traders/products.csv
+
 # Profile SQLite database
 cortx-catalog-gen --source sqlite --uri ./mydata.db --table users
 
