@@ -10,28 +10,58 @@ Cortx agents (RAG, MCP tools) currently discover data sources at runtime with no
 - Return better results through understanding data relationships  
 - Reason about which data source to use for a given query
 
-##  Quick Start (CLI)
+##  Quick Start
+
+### Prerequisites
+
+- Python 3.10 or higher
+- 4GB RAM (8GB recommended)
+- 2GB free disk space
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone <repo-url>
-cd cortx-catalog-gen
+git clone https://github.com/Greeshmapinku/Cortx-Data-Catalog.git
+cd Cortx-Data-Catalog
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Activate (Windows PowerShell)
+.\venv\Scripts\Activate.ps1
+
+# Activate (Mac/Linux)
+source venv/bin/activate
 
 # Install dependencies
 pip install -e ".[dev]"
 ```
 
-### Generate Catalog from Data Sources
+### Option 1: Web Dashboard (Recommended for Demo)
 
 ```bash
-# Set up Groq API key for LLM annotation (free at https://console.groq.com)
-export GROQ_API_KEY="your-key-here"
+# Start the web dashboard
+python app.py
+
+# Open browser to:
+http://localhost:5000
+```
+
+**Features:**
+- Browse 7 Northwind data sources
+- Semantic search with confidence scores
+- View MCP tool manifests
+- Download catalog.json and tool_manifest.json
+
+![Dashboard with Search](search_with_filename.png)
+
+### Option 2: CLI Tool
+
+```bash
+# Set up Groq API key for LLM annotation (optional, free at https://console.groq.com)
+$env:GROQ_API_KEY="your-key-here"  # Windows
+export GROQ_API_KEY="your-key-here"  # Mac/Linux
 
 # Profile a CSV file
 cortx-catalog-gen --source csv --uri ./customers.csv --output catalog.json
@@ -45,7 +75,7 @@ cortx-catalog-gen --source csv --uri ./data.csv --no-annotate
 
 ### Outputs
 
-The CLI generates exactly what Cortx agents need:
+The tool generates exactly what Cortx agents need:
 
 **`catalog.json`** - Semantic catalog with profiles and metadata:
 ```json
@@ -54,6 +84,7 @@ The CLI generates exactly what Cortx agents need:
     {
       "source_id": "csv.customers",
       "source_type": "csv",
+      "connection_ref": "dataset/Northwind_Traders/customers.csv",
       "profile": {
         "row_count": 91,
         "columns": [
@@ -99,7 +130,7 @@ The CLI generates exactly what Cortx agents need:
 
 ##  Features
 
-- **Multi-Source Support**: CSV, SQLite, Parquet (PostgreSQL/MySQL stubs ready)
+- **Multi-Source Support**: CSV, SQLite, Parquet
 - **Deep Profiling**: Cardinality, null rates, type inference, PII detection (5 patterns), date ranges
 - **LLM Annotation**: Structured JSON output via Groq API with few-shot examples
 - **Semantic Search**: Embeddings for similarity-based catalog search (title + description + query_hints)
@@ -130,32 +161,24 @@ pytest
 
 # Run with coverage
 pytest --cov=cortx_catalog --cov-report=html
-
-# Test semantic search
-python -c "
-from cortx_catalog.embedder import Embedder
-from cortx_catalog.models import SemanticData
-
-e = Embedder()
-# Results show cosine similarity scores 0-1
-"
 ```
 
-##  Optional Web Demo
+##  Web Dashboard
 
-A Flask web interface is included for visualizing the catalog during development/demo:
+A Flask web interface is included for visualizing the catalog:
 
 ```bash
-# Generate catalog first
-cortx-catalog-gen --source csv --uri ./data.csv
-
-# Run web demo
 python app.py
 ```
 
-![Web Demo](demo.png)
+The dashboard provides:
+- **Semantic Search**: Find data sources by natural language queries
+- **Data Sources**: Browse all sources with descriptions and tags
+- **MCP Tool Manifests**: View agent-ready tool descriptions
+- **API Endpoints**: Test the REST API
+- **Download**: Get catalog.json and tool_manifest.json
 
-**Note:** The web UI is for visualization only. The CLI tool (`cortx-catalog-gen`) is the primary deliverable that generates the JSON outputs Cortx agents consume.
+![Dynamic Buttons](dynamic_buttons.png)
 
 ##  Assessment Alignment
 
@@ -173,6 +196,7 @@ python app.py
 ## 🛠️ Technology Stack
 
 - **CLI**: Click
+- **Web**: Flask, Flask-CORS
 - **Data**: Pandas, SQLAlchemy, PyArrow
 - **LLM**: Groq API (structured JSON mode)
 - **Embeddings**: sentence-transformers (local, free)
@@ -181,7 +205,23 @@ python app.py
 ##  Environment Variables
 
 ```bash
-GROQ_API_KEY=your_groq_api_key      # Required for LLM annotation
-CORTX_LOG_LEVEL=INFO                # Optional: DEBUG, INFO, WARNING
+GROQ_API_KEY=your_groq_api_key      # Optional: For LLM annotation
+PORT=5000                           # Optional: Change web server port
 ```
 
+##  Quick Commands
+
+| Task | Command |
+|------|---------|
+| Start web dashboard | `python app.py` |
+| Run CLI demo | `cortx-catalog-gen --demo` |
+| Run tests | `pytest` |
+| Stop server | `CTRL + C` |
+
+##  License
+
+MIT License - See LICENSE file for details.
+
+---
+
+**Built by Greeshma** for Cortx Assessment
