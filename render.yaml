@@ -4,7 +4,8 @@ services:
     runtime: python
     region: oregon
     plan: free
-    buildCommand: "pip install -r requirements-render.txt"
+    # Only install minimal deps, SKIP the package with heavy ML deps
+    buildCommand: "pip install flask flask-cors pandas pydantic python-dotenv pyarrow"
     startCommand: "python app_render.py"
     envVars:
       - key: PYTHON_VERSION

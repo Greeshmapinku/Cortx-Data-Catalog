@@ -1,4 +1,4 @@
-"""Lightweight Flask app for Render deployment - NO ML dependencies."""
+"""Lightweight Flask app for Render deployment - NO package dependencies."""
 
 import json
 import os
@@ -6,116 +6,75 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template_string, request
 from flask_cors import CORS
 
-# Only import Pydantic models (lightweight)
-from cortx_catalog.models import (
-    Catalog, CatalogEntry, ProfileData, SemanticData, 
-    MCPTool, ColumnProfile, MCPInputSchema
-)
-
 app = Flask(__name__)
 CORS(app)
 
 # Global catalog
-builder = None
+catalog_entries = []
 
 
-class SimpleCatalogBuilder:
-    """Minimal catalog builder for Render (no ML dependencies)."""
+def load_catalog():
+    """Load catalog from pre-generated JSON."""
+    global catalog_entries
     
-    def __init__(self):
-        self.catalog = Catalog()
-        self.embedder = None
-    
-    def load_from_json(self, filepath):
-        """Load catalog from pre-generated JSON."""
-        with open(filepath, "r") as f:
-            data = json.load(f)
-        
-        for entry_data in data.get("catalog", []):
-            profile = ProfileData(
-                row_count=entry_data["profile"]["row_count"],
-                columns=[ColumnProfile(**col) for col in entry_data["profile"]["columns"]]
-            )
-            
-            semantic = SemanticData(**entry_data["semantic"])
-            
-            mcp_data = entry_data["mcp_tool"]
-            mcp_tool = MCPTool(
-                name=mcp_data["name"],
-                description=mcp_data["description"],
-                input_schema=MCPInputSchema(**mcp_data["input_schema"])
-            )
-            
-            entry = CatalogEntry(
-                source_id=entry_data["source_id"],
-                source_type=entry_data["source_type"],
-                connection_ref=entry_data["connection_ref"],
-                profile=profile,
-                semantic=semantic,
-                mcp_tool=mcp_tool
-            )
-            
-            self.catalog.add_entry(entry)
-    
-    def search(self, query, top_k=3):
-        """Simple keyword search (no embeddings)."""
-        query_lower = query.lower()
-        results = []
-        
-        for entry in self.catalog.entries:
-            score = 0
-            text = f"{entry.semantic.title} {entry.semantic.description} {' '.join(entry.semantic.domain_tags)}"
-            text_lower = text.lower()
-            
-            # Simple keyword matching
-            for word in query_lower.split():
-                if word in text_lower:
-                    score += 1
-            
-            if score > 0:
-                results.append({
-                    "source_id": entry.source_id,
-                    "confidence": min(score / len(query_lower.split()), 1.0),
-                    "metadata": {
-                        "source_id": entry.source_id,
-                        "source_type": entry.source_type,
-                        "title": entry.semantic.title,
-                        "domain_tags": entry.semantic.domain_tags
-                    }
-                })
-        
-        results.sort(key=lambda x: x["confidence"], reverse=True)
-        return results[:top_k]
-
-
-def init_catalog():
-    """Initialize catalog from pre-generated JSON."""
-    global builder
     print("=" * 50)
     print("STARTING CORTX DATA CATALOG - RENDER MODE")
     print("=" * 50)
     
-    builder = SimpleCatalogBuilder()
-    
-    # Try to load catalog.json
     catalog_path = "catalog.json"
     if not Path(catalog_path).exists():
         print(f"ERROR: {catalog_path} not found!")
-        print("Creating empty catalog...")
-        return builder
+        return []
     
     print(f"Loading catalog from {catalog_path}...")
-    builder.load_from_json(catalog_path)
-    print(f"✓ Loaded {len(builder.catalog.entries)} sources")
+    with open(catalog_path, "r") as f:
+        data = json.load(f)
+    
+    catalog_entries = data.get("catalog", [])
+    print(f"✓ Loaded {len(catalog_entries)} sources")
     print("=" * 50)
     
-    return builder
+    return catalog_entries
+
+
+def simple_search(query, top_k=3):
+    """Simple keyword search (no embeddings)."""
+    query_lower = query.lower()
+    results = []
+    
+    for entry in catalog_entries:
+        score = 0
+        semantic = entry.get("semantic", {})
+        text = f"{semantic.get('title', '')} {semantic.get('description', '')} {' '.join(semantic.get('domain_tags', []))}"
+        text_lower = text.lower()
+        
+        # Simple keyword matching
+        query_words = [w for w in query_lower.split() if len(w) > 2]
+        for word in query_words:
+            if word in text_lower:
+                score += 1
+        
+        if score > 0:
+            results.append({
+                "source_id": entry.get("source_id"),
+                "confidence": min(score / len(query_words), 1.0) if query_words else 0,
+                "metadata": {
+                    "source_id": entry.get("source_id"),
+                    "source_type": entry.get("source_type"),
+                    "title": semantic.get("title"),
+                    "domain_tags": semantic.get("domain_tags", [])
+                }
+            })
+    
+    results.sort(key=lambda x: x["confidence"], reverse=True)
+    return results[:top_k]
 
 
 @app.route("/")
 def index():
     """Serve the main UI."""
-    entries = builder.catalog.entries if builder else []
+    total_rows = sum(e.get("profile", {}).get("row_count", 0) for e in catalog_entries)
+    total_cols = sum(len(e.get("profile", {}).get("columns", [])) for e in catalog_entries)
     
     html = f"""
     <!DOCTYPE html>
@@ -243,15 +202,15 @@ def index():
                 
                 <div class="stats">
                     <div class="stat">
-                        <div class="stat-value">{len(entries)}</div>
+                        <div class="stat-value">{len(catalog_entries)}</div>
                         <div class="stat-label">Data Sources</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-value">{sum(e.profile.row_count for e in entries):,}</div>
+                        <div class="stat-value">{total_rows:,}</div>
                         <div class="stat-label">Total Rows</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-value">{sum(len(e.profile.columns) for e in entries)}</div>
+                        <div class="stat-value">{total_cols}</div>
                         <div class="stat-label">Columns</div>
                     </div>
                 </div>
@@ -275,20 +234,24 @@ def index():
             <h2 style="margin: 40px 0 20px;">All Data Sources</h2>
     """
     
-    for entry in entries:
-        tags_html = ''.join(f'<span class="tag">{tag}</span>' for tag in entry.semantic.domain_tags)
+    for entry in catalog_entries:
+        semantic = entry.get("semantic", {})
+        profile = entry.get("profile", {})
+        tags = semantic.get("domain_tags", [])
+        tags_html = ''.join(f'<span class="tag">{tag}</span>' for tag in tags)
+        
         html += f"""
             <div class="entry">
                 <div class="entry-header">
-                    <h3 class="entry-title">{entry.semantic.title}</h3>
-                    <span class="entry-type">{entry.source_type}</span>
+                    <h3 class="entry-title">{semantic.get('title', 'Untitled')}</h3>
+                    <span class="entry-type">{entry.get('source_type', 'unknown')}</span>
                 </div>
-                <p class="entry-desc">{entry.semantic.description}</p>
+                <p class="entry-desc">{semantic.get('description', 'No description')}</p>
                 <div class="tags">{tags_html}</div>
                 <p style="color: #666; font-size: 0.9em;">
-                    📊 {entry.profile.row_count:,} rows • 
-                    {len(entry.profile.columns)} columns • 
-                    Sensitivity: {entry.semantic.sensitivity}
+                    📊 {profile.get('row_count', 0):,} rows • 
+                    {len(profile.get('columns', []))} columns • 
+                    Sensitivity: {semantic.get('sensitivity', 'unknown')}
                 </p>
             </div>
         """
@@ -353,35 +316,27 @@ def health():
     """Health check endpoint."""
     return jsonify({
         "status": "healthy",
-        "catalog_loaded": builder is not None and len(builder.catalog.entries) > 0,
-        "sources_count": len(builder.catalog.entries) if builder else 0,
-        "mode": "render-lightweight"
+        "catalog_loaded": len(catalog_entries) > 0,
+        "sources_count": len(catalog_entries),
+        "mode": "render-standalone"
     })
 
 
 @app.route("/api/catalog")
 def get_catalog():
     """Return full catalog."""
-    if not builder:
-        return jsonify({"error": "Catalog not loaded"}), 500
-    return jsonify({"catalog": [e.model_dump() for e in builder.catalog.entries]})
+    return jsonify({"catalog": catalog_entries})
 
 
 @app.route("/api/manifest")
 def get_manifest():
     """Return MCP tool manifests."""
-    if not builder:
-        return jsonify({"error": "Catalog not loaded"}), 500
+    manifest_path = "tool_manifest.json"
+    if not Path(manifest_path).exists():
+        return jsonify({"error": "Manifest not found"}), 404
     
-    manifest = {}
-    for entry in builder.catalog.entries:
-        if entry.mcp_tool:
-            manifest[entry.mcp_tool.name] = {
-                "description": entry.mcp_tool.description,
-                "input_schema": entry.mcp_tool.input_schema.model_dump(),
-                "source_id": entry.source_id
-            }
-    return jsonify(manifest)
+    with open(manifest_path, "r") as f:
+        return jsonify(json.load(f))
 
 
 @app.route("/api/search")
@@ -391,7 +346,7 @@ def search():
     if not query:
         return jsonify({"query": "", "results": []})
     
-    results = builder.search(query) if builder else []
+    results = simple_search(query)
     return jsonify({"query": query, "results": results})
 
 
@@ -405,10 +360,13 @@ def download(filename):
     if not filepath.exists():
         return jsonify({"error": "File not found"}), 404
     
-    return jsonify(json.loads(filepath.read_text()))
+    with open(filepath, "r") as f:
+        return jsonify(json.load(f))
 
+
+# Load catalog on startup
+load_catalog()
 
 if __name__ == "__main__":
-    init_catalog()
     port = int(os.getenv("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
