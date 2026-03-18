@@ -1,0 +1,96 @@
+{
+  "query_trading_positions": {
+    "description": "Trading Positions - Business data table containing 1,000 records. Use when user asks about data queries. Do not use for unrelated business domains. Requires elevated permissions.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "sql": {
+          "type": "string",
+          "description": "SQL query to execute"
+        },
+        "portfolio_id": {
+          "type": "INTEGER",
+          "description": "Filter by portfolio_id"
+        },
+        "date": {
+          "type": "DATE",
+          "description": "Filter by date"
+        }
+      },
+      "required": [
+        "sql"
+      ]
+    },
+    "source_id": "trading.positions"
+  },
+  "query_trading_trades": {
+    "description": "Trading Trades - Business data table containing 5,000 records. Use when user asks about data queries. Do not use for unrelated business domains. Requires elevated permissions.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "sql": {
+          "type": "string",
+          "description": "SQL query to execute"
+        },
+        "trade_id": {
+          "type": "TEXT",
+          "description": "Filter by trade_id"
+        },
+        "portfolio_id": {
+          "type": "INTEGER",
+          "description": "Filter by portfolio_id"
+        },
+        "timestamp": {
+          "type": "DATETIME",
+          "description": "Filter by timestamp"
+        }
+      },
+      "required": [
+        "sql"
+      ]
+    },
+    "source_id": "trading.trades"
+  },
+  "query_csv_customers": {
+    "description": "Csv Customers - Business data table containing 500 records. Use when user asks about data queries. Do not use for unrelated business domains.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "filters": {
+          "type": "object",
+          "description": "Filter conditions as key-value pairs"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Columns to return (default: all)"
+        }
+      },
+      "required": []
+    },
+    "source_id": "csv.customers"
+  },
+  "query_parquet_products": {
+    "description": "Parquet Products - Business data table containing 200 records. Use when user asks about data queries. Do not use for unrelated business domains.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "filters": {
+          "type": "object",
+          "description": "Filter conditions as key-value pairs"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Columns to return (default: all)"
+        }
+      },
+      "required": []
+    },
+    "source_id": "parquet.products"
+  }
+}

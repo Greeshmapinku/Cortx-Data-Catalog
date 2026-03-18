@@ -4,8 +4,8 @@ services:
     runtime: python
     region: oregon
     plan: free
-    buildCommand: "pip install --no-cache-dir -r requirements-render.txt"
-    startCommand: "python app.py"
+    buildCommand: "pip install -r requirements-render.txt"
+    startCommand: "python app_render.py"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0

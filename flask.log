@@ -54,3 +54,14 @@ D:\Student Assignments\student_protfolios\Greeshma\Semantic_Layer_Builder\src\co
 127.0.0.1 - - [18/Mar/2026 03:59:19] "GET / HTTP/1.1" 200 -
 127.0.0.1 - - [18/Mar/2026 03:59:19] "GET /api/catalog HTTP/1.1" 200 -
 127.0.0.1 - - [18/Mar/2026 03:59:19] "GET /api/manifest HTTP/1.1" 200 -
+forrtl: error (200): program aborting due to window-CLOSE event
+Image              PC                Routine            Line        Source             
+KERNELBASE.dll     00007FF8B18BC24D  Unknown               Unknown  Unknown
+KERNEL32.DLL       00007FF8B394E8D7  Unknown               Unknown  Unknown
+ntdll.dll          00007FF8B416C53C  Unknown               Unknown  Unknown
+forrtl: error (200): program aborting due to window-CLOSE event
+Image              PC                Routine            Line        Source             
+KERNELBASE.dll     00007FF8B18BC24D  Unknown               Unknown  Unknown
+KERNEL32.DLL       00007FF8B394E8D7  Unknown               Unknown  Unknown
+ntdll.dll          00007FF8B416C53C  Unknown               Unknown  Unknown
+^C
